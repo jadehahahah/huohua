@@ -379,6 +379,8 @@ label.field{display:block; font-size:13px; font-weight:600; color:var(--ink-soft
 .maptable tr:last-child td{border-bottom:0}
 .maptable select{width:100%; min-width:104px; padding:5px 6px; border:1px solid var(--line-strong); border-radius:8px; background:var(--surface); color:var(--ink); font-size:12px; font-weight:600}
 .maptable td.cjk{font-family:var(--font-hanzi); color:var(--ink)}
+.setpick{display:flex; align-items:center; gap:9px; margin:0 0 16px; flex-wrap:wrap}
+.setpick select{padding:7px 11px; border:1px solid var(--line-strong); border-radius:10px; background:var(--surface-2); color:var(--ink); font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer}
 </style>
 </head>
 <body>
@@ -426,6 +428,8 @@ const I18N = {
   en:{
     nav_dashboard:"Dashboard", nav_vocab:"Vocabulary", nav_react:"Reaction Translation",
     nav_build:"Sentence Builder", nav_listen:"Listening", nav_progress:"Progress", nav_settings:"Settings",
+    practiceFrom:"Practise from:", builtinSet:"Built-in sentences", setEmpty:"This set has nothing for this exercise yet. Pick another set above, or add example sentences.",
+    genEx:"Generate examples", genRunning:"Generating\u2026", genDone:"Added {n} example sentences",
     yourId:"Your Huohua ID",
     greet:"Keep the spark going", dash_sub:"Turn the words you know into words you can use.",
     activeVocab:"Active vocabulary", ofTotal:"of {n} words", total:"Words collected", ignitedToday:"Activated today",
@@ -443,8 +447,13 @@ const I18N = {
     play:"Play", slow:"Slow", noVocab:"No words match. Try another filter, or add your own.",
     react_h:"Reaction Translation", react_sub:"Read the sentence, then write it in Chinese. We'll compare it to a sample answer.",
     yourAnswer:"Your Chinese", writeHere:"写中文…", check:"Check", stop:"Stop", next:"Next sentence",
-    showRef:"Show a natural answer", thinking:"Claude is checking your Chinese…",
+    showRef:"Show a natural answer", thinking:"Checking your Chinese…",
     corrected:"Corrected", nativeAlt:"A native might also say", tips:"Tips", targets:"Try to use",
+    aiTitle:"AI feedback (optional)", aiHelp:"Add a free Groq API key to unlock smart grading in Reaction Translation. Your key stays only in this browser.",
+    aiKey:"Groq API key", aiModel:"Model (optional)", aiTest:"Test", aiClear:"Remove", aiGetKey:"Get a free key",
+    aiNoKey:"Enter your key first.", aiTesting:"Testing\u2026", aiOk:"Working \u2014 smart grading is on.", aiFail:"Couldn\u2019t reach the AI. Check your key and connection.",
+    aiBadKey:"Invalid key \u2014 check it at console.groq.com.", aiRate:"Rate limit reached \u2014 try again later.",
+    aiActive:"Smart grading is on.", aiOffNote:"No key yet \u2014 using offline grading.", aiBy:"Graded by AI (Groq)",
     matchLabel:"match with the sample", matchExact:"Matches the sample!", matchClose:"Very close to the sample",
     compareSample:"Compare with the sample", targetsUsed:"Target words", sampleAnswer:"Sample answer", selfRateQ:"How did you do?",
     meaning:"Meaning", grammar:"Grammar", naturalness:"Naturalness", vocabulary:"Vocabulary",
@@ -470,7 +479,8 @@ const I18N = {
     added:"Added {n} words", addOne:"Word added", pasteCsv:"…or paste rows here", doImport:"Import",
     setNamePrompt:"Name this word set (e.g. HSK 1, 工厂):", impDefault:"Imported",
     ok:"OK", setNameTitle:"Name this word set", setNamePH:"e.g. HSK 1, 工厂, My deck", detected:"{n} words detected",
-    deleteSet:"Delete set", wordsInSet:"words in this set", deleteSetConfirm:"Delete the whole “{set}” set and its {n} words? This can’t be undone.",
+    deleteSet:"Delete set", wordsInSet:"words in this set",
+    renameSet:"Rename set", renameSetMsg:"Enter a new name for \u201c{set}\u201d:", deleteSetConfirm:"Delete the whole “{set}” set and its {n} words? This can’t be undone.",
     deleteWord:"Delete word", deleteWordConfirm:"Remove “{w}” from your vocabulary?", deleted:"Deleted",
     mapTitle:"Import — match your columns", mapHelp:"Tell me what each column is.", needHanzi:"Please set one column as Hanzi.",
     roleIgnore:"— Ignore —", roleHanzi:"Hanzi", rolePinyin:"Pinyin", roleVi:"Meaning (VI)", roleEn:"Meaning (EN)", roleEx:"Example",
@@ -485,6 +495,8 @@ const I18N = {
   vi:{
     nav_dashboard:"Tổng quan", nav_vocab:"Từ vựng", nav_react:"Phản xạ dịch",
     nav_build:"Ghép câu", nav_listen:"Nghe chép", nav_progress:"Tiến độ", nav_settings:"Cài đặt",
+    practiceFrom:"Luyện từ bộ:", builtinSet:"Câu có sẵn", setEmpty:"Bộ này chưa có nội dung cho bài này. Chọn bộ khác ở trên, hoặc thêm câu ví dụ.",
+    genEx:"Sinh câu ví dụ", genRunning:"Đang sinh\u2026", genDone:"Đã tạo {n} câu ví dụ",
     yourId:"Huohua ID của bạn",
     greet:"Giữ cho tia lửa cháy", dash_sub:"Biến những từ bạn biết thành những từ bạn dùng được.",
     activeVocab:"Từ vựng chủ động", ofTotal:"trên {n} từ", total:"Từ đã thu thập", ignitedToday:"Kích hoạt hôm nay",
@@ -502,8 +514,13 @@ const I18N = {
     play:"Phát", slow:"Chậm", noVocab:"Không có từ phù hợp. Thử bộ lọc khác hoặc tự thêm từ.",
     react_h:"Phản xạ dịch", react_sub:"Đọc câu, rồi viết bằng tiếng Trung. Ứng dụng sẽ so với một câu mẫu.",
     yourAnswer:"Câu tiếng Trung của bạn", writeHere:"写中文…", check:"Kiểm tra", stop:"Dừng", next:"Câu tiếp theo",
-    showRef:"Xem một câu tự nhiên", thinking:"Claude đang kiểm tra tiếng Trung của bạn…",
+    showRef:"Xem một câu tự nhiên", thinking:"Đang kiểm tra tiếng Trung của bạn…",
     corrected:"Đã sửa", nativeAlt:"Người bản xứ cũng có thể nói", tips:"Mẹo", targets:"Cố gắng dùng",
+    aiTitle:"Chấm bằng AI (tùy chọn)", aiHelp:"Thêm API key Groq miễn phí để mở chấm điểm thông minh ở bài Phản xạ dịch. Key chỉ lưu trên trình duyệt này.",
+    aiKey:"API key Groq", aiModel:"Model (tùy chọn)", aiTest:"Kiểm tra", aiClear:"Gỡ", aiGetKey:"Lấy key miễn phí",
+    aiNoKey:"Nhập key trước đã.", aiTesting:"Đang kiểm tra\u2026", aiOk:"Chạy được \u2014 đã bật chấm thông minh.", aiFail:"Không gọi được AI. Kiểm tra key và kết nối.",
+    aiBadKey:"Key không hợp lệ \u2014 kiểm tra ở console.groq.com.", aiRate:"Đã chạm giới hạn \u2014 thử lại sau.",
+    aiActive:"Đã bật chấm thông minh.", aiOffNote:"Chưa có key \u2014 đang dùng chấm ngoại tuyến.", aiBy:"Chấm bằng AI (Groq)",
     matchLabel:"khớp với câu mẫu", matchExact:"Trùng khớp câu mẫu!", matchClose:"Rất sát câu mẫu",
     compareSample:"So sánh với câu mẫu", targetsUsed:"Từ mục tiêu", sampleAnswer:"Câu mẫu", selfRateQ:"Bạn làm thế nào?",
     meaning:"Ý nghĩa", grammar:"Ngữ pháp", naturalness:"Tự nhiên", vocabulary:"Từ vựng",
@@ -529,7 +546,8 @@ const I18N = {
     added:"Đã thêm {n} từ", addOne:"Đã thêm từ", pasteCsv:"…hoặc dán các dòng vào đây", doImport:"Nhập",
     setNamePrompt:"Đặt tên cho bộ từ này (vd HSK 1, 工厂):", impDefault:"Đã nhập",
     ok:"OK", setNameTitle:"Đặt tên bộ từ", setNamePH:"vd HSK 1, 工厂, Bộ của tôi", detected:"Đã phát hiện {n} từ",
-    deleteSet:"Xóa bộ", wordsInSet:"từ trong bộ này", deleteSetConfirm:"Xóa toàn bộ bộ “{set}” cùng {n} từ trong đó? Không thể hoàn tác.",
+    deleteSet:"Xóa bộ", wordsInSet:"từ trong bộ này",
+    renameSet:"Đổi tên bộ", renameSetMsg:"Nhập tên mới cho \u201c{set}\u201d:", deleteSetConfirm:"Xóa toàn bộ bộ “{set}” cùng {n} từ trong đó? Không thể hoàn tác.",
     deleteWord:"Xóa từ", deleteWordConfirm:"Xóa “{w}” khỏi danh sách của bạn?", deleted:"Đã xóa",
     mapTitle:"Nhập từ — khớp các cột", mapHelp:"Cho biết mỗi cột là gì.", needHanzi:"Hãy chọn một cột làm Chữ Hán.",
     roleIgnore:"— Bỏ qua —", roleHanzi:"Chữ Hán", rolePinyin:"Pinyin", roleVi:"Nghĩa (VI)", roleEn:"Nghĩa (EN)", roleEx:"Ví dụ",
@@ -1012,6 +1030,15 @@ function renderVocab(v){
       const label=CAT_LABEL[vocabFilter.cat]||vocabFilter.cat;
       const bar=el("div","setbar");
       bar.innerHTML='<span class="cnt">'+inCat+' '+esc(t("wordsInSet"))+'</span>';
+      const ren=el("button","btn sm"); ren.textContent="✏️ "+t("renameSet");
+      ren.onclick=async()=>{
+        const newName=await modalPrompt({title:t("renameSet"), message:t("renameSetMsg",{set:label}), placeholder:label, value:label, confirmText:t("save")});
+        if(newName!==null && newName.trim() && newName.trim()!==vocabFilter.cat){
+          renameCategory(vocabFilter.cat, newName.trim());
+          toast(t("saved"));
+        }
+      };
+      bar.appendChild(ren);
       const del=el("button","btn sm danger"); del.textContent="🗑 "+t("deleteSet");
       del.onclick=async()=>{
         const ok=await modalConfirm({title:t("deleteSet"), message:t("deleteSetConfirm",{set:label,n:inCat}), confirmText:t("delete"), danger:true});
@@ -1275,6 +1302,10 @@ function countCsv(text){
   const delim=lines[0].includes("\t")?"\t":",";
   return countImportable(lines.map(l=>splitCsv(l,delim)));
 }
+function renameCategory(oldCat, newCat){
+  state.words.forEach(w=>{ if(w.cat===oldCat) w.cat=newCat; });
+  vocabFilter.cat=newCat; save(); renderVocab($("#view-vocab"));
+}
 function deleteCategory(cat){
   const ids=state.words.filter(w=>w.cat===cat).map(w=>w.id);
   state.words=state.words.filter(w=>w.cat!==cat);
@@ -1299,18 +1330,53 @@ function splitCsv(line,delim){
 /* =========================================================================
    Reaction Translation (core)
    ========================================================================= */
+function practiceItems(kind){
+  const set=(state.settings.practiceSet)||"builtin";
+  if(set==="builtin") return kind==="react"?REACT:kind==="build"?BUILD:LISTEN;
+  const ws=state.words.filter(w=>w.cat===set);
+  const hasEx=w=>w.ex&&w.ex.trim();
+  if(kind==="react") return ws.filter(w=>w.hanzi&&(w.vi||w.en||hasEx(w))).map(w=> hasEx(w)
+      ? ({vi:(w.exvi||w.exen||w.vi), en:(w.exen||w.exvi||w.en), ref:w.ex.trim(), words:[w.hanzi]})
+      : ({vi:w.vi||w.en, en:w.en||w.vi, ref:w.hanzi, words:[w.hanzi], _hideTargets:true}));
+  if(kind==="listen") return ws.filter(w=>w.hanzi).map(w=>hasEx(w)?w.ex.trim():w.hanzi);
+  return ws.filter(w=>w.hanzi && ((w.extiles&&w.extiles.length>=2) || Array.from(w.hanzi).length>=2))
+    .map(w=> (w.extiles&&w.extiles.length>=2) ? ({tiles:w.extiles.slice(), ans:(w.ex||"").trim()}) : ({tiles:Array.from(w.hanzi), ans:w.hanzi}));
+}
+function practiceBarHtml(){
+  const cur=(state.settings.practiceSet)||"builtin";
+  const cats=[...new Set(state.words.map(w=>w.cat))];
+  let opts='<option value="builtin"'+(cur==="builtin"?" selected":"")+'>'+esc(t("builtinSet"))+'</option>';
+  cats.forEach(c=>{ opts+='<option value="'+esc(c)+'"'+(cur===c?" selected":"")+'>'+esc(CAT_LABEL[c]||c)+'</option>'; });
+  let gen="";
+  if(cur!=="builtin" && aiConfigured()){
+    const need=state.words.filter(w=>w.cat===cur && !(w.ex&&w.ex.trim())).length;
+    if(need>0) gen='<button class="btn sm" id="pgen">\u2726 '+esc(t("genEx"))+' ('+need+')</button>';
+  }
+  return '<div class="setpick"><span class="hint">'+esc(t("practiceFrom"))+'</span><select id="psel">'+opts+'</select>'+gen+'</div>';
+}
+function bindPracticeBar(v, rerender){
+  const s=$("#psel",v); if(s) s.onchange=()=>{ state.settings.practiceSet=s.value; save(); reactIdx=0; buildIdx=0; listenIdx=0; rerender(); };
+  const g=$("#pgen",v); if(g) g.onclick=async()=>{
+    g.disabled=true; g.textContent=t("genRunning");
+    try{ const n=await genExamples(state.settings.practiceSet); toast(n>0?t("genDone",{n:n}):"\u2014"); rerender(); }
+    catch(err){ const c=err&&err.code; toast(c==="bad_key"?t("aiBadKey"):c==="rate_limited"?t("aiRate"):t("aiFail")); g.disabled=false; g.textContent="\u2726 "+t("genEx"); }
+  };
+}
+function practiceEmpty(){ return '<div class="stage"><div class="promptcard"><p class="hint" style="margin:0">'+esc(t("setEmpty"))+'</p></div></div>'; }
 let reactIdx=0, reactCtl=null;
 function renderReact(v){
   v=v||$("#view-react"); if(!v) return;
-  const p=REACT[reactIdx];
+  const items=practiceItems("react");
+  const head='<p class="h-eyebrow">'+esc(t("nav_react"))+'</p><h1 class="h1">'+esc(t("react_h"))+'</h1><p class="lede">'+esc(t("react_sub"))+'</p>'+practiceBarHtml();
+  if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderReact()); return; }
+  if(reactIdx>=items.length) reactIdx=0;
+  const p=items[reactIdx];
   v.innerHTML=
-    '<p class="h-eyebrow">'+esc(t("nav_react"))+'</p>'+
-    '<h1 class="h1">'+esc(t("react_h"))+'</h1>'+
-    '<p class="lede">'+esc(t("react_sub"))+'</p>'+
+    head+
     '<div class="stage">'+
       '<div class="promptcard">'+
         '<p class="prompt-vi">'+esc(state.settings.lang==="vi" ? p.vi : p.en)+'</p>'+
-        (p.words&&p.words.length?('<div class="targetwords"><span class="hint" style="align-self:center;margin-right:2px">'+esc(t("targets"))+':</span>'+
+        (p.words&&p.words.length&&!p._hideTargets?('<div class="targetwords"><span class="hint" style="align-self:center;margin-right:2px">'+esc(t("targets"))+':</span>'+
           p.words.map(w=>'<span class="tw hanzi">'+esc(w)+'</span>').join(""))+'</div>':'')+
       '</div>'+
       '<label class="field">'+esc(t("yourAnswer"))+'</label>'+
@@ -1325,7 +1391,8 @@ function renderReact(v){
   const ta=$("#rans",v); ta.focus();
   $("#rcheck",v).onclick=()=>checkReact();
   $("#rref",v).onclick=()=>showRef();
-  $("#rnext",v).onclick=()=>{ let n; do{ n=Math.floor(Math.random()*REACT.length);}while(n===reactIdx&&REACT.length>1); reactIdx=n; renderReact(); };
+  $("#rnext",v).onclick=()=>{ let n; do{ n=Math.floor(Math.random()*items.length);}while(n===reactIdx&&items.length>1); reactIdx=n; renderReact(); };
+  bindPracticeBar(v,()=>renderReact());
 
   function showRef(){
     const fb=$("#rfeedback",v);
@@ -1342,16 +1409,39 @@ function renderReact(v){
       creditWords(p.words, amt); logPractice("react", idsOf(p.words)); toast(t("saved"));
     });
   }
-  function checkReact(){
-    const ans=$("#rans",v).value.trim();
-    if(!ans){ ta.focus(); return; }
+  function localGrade(ans){
     const res=gradeReactLocal(ans, p);
     renderReactLocal($("#rfeedback",v), res, p);
-    // objective baseline credit from sample-match + target-word usage
     const wordScore = (p.words&&p.words.length) ? res.used.length/p.words.length : 1;
-    const base = Math.round((0.5*res.sim/100 + 0.5*wordScore) * 18);
-    creditWords(p.words, Math.max(3, base));
+    creditWords(p.words, Math.max(3, Math.round((0.5*res.sim/100 + 0.5*wordScore) * 18)));
     logPractice("react", idsOf(p.words));
+  }
+  async function checkReact(){
+    const ans=$("#rans",v).value.trim();
+    if(!ans){ ta.focus(); return; }
+    if(!aiConfigured()){ localGrade(ans); return; }
+    const fb=$("#rfeedback",v), btn=$("#rcheck",v); btn.disabled=true;
+    fb.innerHTML='<div class="feedback"><div class="row" style="color:var(--ink-soft)"><span class="spinner"></span> '+esc(t("thinking"))+'</div></div>';
+    const lang = state.settings.lang==="vi" ? "Vietnamese" : "English";
+    const sys="You are a warm, precise Mandarin Chinese tutor. Judge the learner's Chinese. Reply ONLY with a compact JSON object, no markdown.";
+    const usr="Idea (Vietnamese): "+p.vi+"\nIdea (English): "+p.en+"\nA natural reference answer: "+p.ref+"\nThe learner wrote: "+ans+"\n\n"+
+      'Return JSON exactly: {"overall":<0-100>,"meaning":{"score":<0-100>,"note":"<short>"},"grammar":{"score":<0-100>,"note":"<short>"},"naturalness":{"score":<0-100>,"note":"<short>"},"vocabulary":{"score":<0-100>,"note":"<short>"},"corrected":"<most natural correct Chinese for their intent>","native_alt":"<a different natural way, or empty>","tips":["<1-3 short tips>"],"errors":[{"wrong":"<hanzi>","right":"<hanzi>","why":"<short>"}]}\n'+
+      "All notes, tips and why fields in "+lang+", each under 16 words. If the answer is already good, give high scores and few or no errors.";
+    try{
+      const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.2});
+      renderAiFeedback(fb, data, p);
+      const q=Math.max(0,Math.min(100,Number(data.overall)||0));
+      creditWords(p.words, q>=85?24:q>=70?16:q>=50?8:3);
+      logPractice("react", idsOf(p.words));
+      if(Array.isArray(data.errors)) data.errors.slice(0,4).forEach(e=>{ if(e&&e.wrong&&e.right) state.mistakes.push({wrong:String(e.wrong),right:String(e.right),why:String(e.why||""),d:todayStr()}); });
+      if(state.mistakes.length>200) state.mistakes=state.mistakes.slice(-200);
+      save();
+    }catch(err){
+      const code=err&&err.code;
+      if(code==="bad_key") fb.innerHTML='<div class="notice">'+esc(t("aiBadKey"))+'</div>';
+      else if(code==="rate_limited") fb.innerHTML='<div class="notice">'+esc(t("aiRate"))+'</div>';
+      else localGrade(ans);
+    }finally{ btn.disabled=false; }
   }
 }
 /* ----- Local grading: compare the learner's Chinese to the sample answer ----- */
@@ -1404,6 +1494,72 @@ function renderReactLocal(fb, res, p){
     toast(t("saved"));
   });
 }
+function aiCfg(){ try{ return JSON.parse(localStorage.getItem("huohua_ai"))||{}; }catch(e){ return {}; } }
+function aiSave(c){ try{ localStorage.setItem("huohua_ai", JSON.stringify(c||{})); }catch(e){} }
+function aiConfigured(){ const c=aiCfg(); return !!(c.key && c.key.trim()); }
+const AI_DEFAULT_MODEL="llama-3.3-70b-versatile";
+async function aiChat(messages, opts){
+  opts=opts||{};
+  const c=aiCfg(); if(!c.key||!c.key.trim()) throw {code:"no_key"};
+  const body={ model:(c.model&&c.model.trim())||AI_DEFAULT_MODEL, messages:messages,
+    temperature:(opts.temperature!=null?opts.temperature:0.3) };
+  if(opts.json) body.response_format={type:"json_object"};
+  let res;
+  try{ res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+    method:"POST", headers:{ "Authorization":"Bearer "+c.key.trim(), "Content-Type":"application/json" },
+    body:JSON.stringify(body) }); }
+  catch(e){ throw {code:"network"}; }
+  if(!res.ok){ let code="http_"+res.status; if(res.status===401||res.status===403) code="bad_key"; else if(res.status===429) code="rate_limited"; throw {code:code,status:res.status}; }
+  const data=await res.json();
+  const text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||"";
+  if(opts.json){ try{ return JSON.parse(text); }catch(e){ const m=text.match(/\{[\s\S]*\}/); if(m){ try{ return JSON.parse(m[0]); }catch(e2){} } throw {code:"bad_json"}; } }
+  return text;
+}
+async function genExamples(setCat){
+  const need=state.words.filter(w=>w.cat===setCat && !(w.ex&&w.ex.trim()));
+  if(!need.length) return 0;
+  const cap=need.slice(0,24), CH=8; let done=0;
+  const lang = state.settings.lang==="vi" ? "Vietnamese" : "English";
+  for(let i=0;i<cap.length;i+=CH){
+    const chunk=cap.slice(i,i+CH);
+    const list=chunk.map((w,k)=>(k+1)+". "+w.hanzi+(w.pinyin?" ("+w.pinyin+")":"")).join("\n");
+    const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
+    const usr="For each Chinese word below, write ONE short, natural, beginner-friendly sentence (ideally under 12 Chinese characters) that uses the exact word. Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
+    const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.4});
+    const items=(data&&data.items)||[];
+    chunk.forEach((w,k)=>{ const it=items[k]; if(it&&it.cn){
+      w.ex=String(it.cn).trim();
+      w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
+      let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
+      if(tiles.join("").replace(/\s/g,"")!==w.ex.replace(/\s/g,"")) tiles=Array.from(w.ex);
+      w.extiles=tiles; done++;
+    }});
+    save();
+  }
+  return done;
+}
+function renderAiFeedback(fb,data,p){
+  const q=Math.max(0,Math.min(100,Math.round(Number(data.overall)||0)));
+  const verdict = q>=85 ? ['ok',t("great")] : q>=60 ? ['ok',t("almost")] : ['no',t("tryAgain")];
+  const dim=(key,label)=>{ const d=data[key]||{}; const s=Math.max(0,Math.min(100,Math.round(Number(d.score)||0)));
+    return '<div class="dim"><div class="dl"><span>'+esc(label)+'</span><span>'+s+'</span></div><div class="bar"><i style="width:'+s+'%"></i></div>'+(d.note?'<div class="dn">'+esc(d.note)+'</div>':'')+'</div>'; };
+  let errHtml=""; if(Array.isArray(data.errors)&&data.errors.length){
+    errHtml='<div style="margin-top:10px">'+data.errors.slice(0,4).map(e=>'<div class="erritem"><span class="x hanzi">'+esc(e.wrong||"")+'</span><span style="color:var(--ink-faint)">\u2192</span><span class="r hanzi">'+esc(e.right||"")+'</span><span style="color:var(--ink-soft);font-size:13px">'+esc(e.why||"")+'</span></div>').join("")+'</div>';
+  }
+  let tipsHtml=""; if(Array.isArray(data.tips)&&data.tips.length){
+    tipsHtml='<div style="margin-top:6px"><div class="lbl" style="font-size:12px;color:var(--ink-faint);font-weight:600">'+esc(t("tips"))+'</div><ul class="tips">'+data.tips.slice(0,3).map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>';
+  }
+  fb.innerHTML='<div class="feedback">'+
+    '<div class="scoreline"><div class="scorering" style="--p:'+q+'"><div class="inner">'+q+'</div></div><div><span class="verdict '+verdict[0]+'">'+(verdict[0]==="ok"?"\u2713 ":"\u21bb ")+esc(verdict[1])+'</span></div></div>'+
+    '<div class="dims">'+dim("meaning",t("meaning"))+dim("grammar",t("grammar"))+dim("naturalness",t("naturalness"))+dim("vocabulary",t("vocabulary"))+'</div>'+
+    (data.corrected?('<div class="answerblock"><div class="lbl">'+esc(t("corrected"))+'</div><div class="val hanzi"><span>'+esc(data.corrected)+'</span><button class="iconbtn" id="fbc">\u25b6</button></div></div>'):'')+
+    (data.native_alt?('<div class="answerblock"><div class="lbl">'+esc(t("nativeAlt"))+'</div><div class="val hanzi"><span>'+esc(data.native_alt)+'</span><button class="iconbtn" id="fbn">\u25b6</button></div></div>'):'')+
+    errHtml+tipsHtml+
+    '<div class="hint" style="margin-top:12px">\u2726 '+esc(t("aiBy"))+'</div>'+
+  '</div>';
+  const b1=$("#fbc",fb); if(b1) b1.onclick=()=>speak(data.corrected);
+  const b2=$("#fbn",fb); if(b2) b2.onclick=()=>speak(data.native_alt);
+}
 function idsOf(words){ return (words||[]).map(hz=>{ const w=wordByHanzi(hz); return w?w.id:null; }).filter(Boolean); }
 function creditWords(words, amt){
   (words||[]).forEach(hz=>{ let w=wordByHanzi(hz);
@@ -1418,12 +1574,15 @@ function creditWords(words, amt){
    ========================================================================= */
 let buildIdx=0;
 function renderBuild(v){
-  const item=BUILD[buildIdx];
+  v=v||$("#view-build");
+  const items=practiceItems("build");
+  const head='<p class="h-eyebrow">'+esc(t("nav_build"))+'</p><h1 class="h1">'+esc(t("build_h"))+'</h1><p class="lede">'+esc(t("build_sub"))+'</p>'+practiceBarHtml();
+  if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderBuild($("#view-build"))); return; }
+  if(buildIdx>=items.length) buildIdx=0;
+  const item=items[buildIdx];
   const tiles=shuffle(item.tiles);
   v.innerHTML=
-    '<p class="h-eyebrow">'+esc(t("nav_build"))+'</p>'+
-    '<h1 class="h1">'+esc(t("build_h"))+'</h1>'+
-    '<p class="lede">'+esc(t("build_sub"))+'</p>'+
+    head+
     '<div class="stage"><div class="promptcard">'+
       '<div class="buildzone" id="bzone" data-empty="'+esc(t("buildEmpty"))+'"></div>'+
       '<div class="tiles" id="btiles"></div>'+
@@ -1463,7 +1622,8 @@ function renderBuild(v){
     }
   };
   $("#bclear",v).onclick=()=>{ zone.innerHTML=""; chosen.length=0; pool.querySelectorAll(".tile").forEach(t=>t.classList.remove("used")); $("#bfeedback",v).innerHTML=""; };
-  $("#bnext",v).onclick=()=>{ buildIdx=(buildIdx+1)%BUILD.length; renderBuild($("#view-build")); };
+  $("#bnext",v).onclick=()=>{ buildIdx=(buildIdx+1)%items.length; renderBuild($("#view-build")); };
+  bindPracticeBar(v,()=>renderBuild($("#view-build")));
 }
 function idsForSentence(sent){
   const ids=[]; state.words.forEach(w=>{ if(w.hanzi.length>=2 && sent.includes(w.hanzi)) ids.push(w.id); });
@@ -1475,11 +1635,14 @@ function idsForSentence(sent){
    ========================================================================= */
 let listenIdx=0;
 function renderListen(v){
-  const sent=LISTEN[listenIdx];
+  v=v||$("#view-listen");
+  const items=practiceItems("listen");
+  const head='<p class="h-eyebrow">'+esc(t("nav_listen"))+'</p><h1 class="h1">'+esc(t("listen_h"))+'</h1><p class="lede">'+esc(t("listen_sub"))+'</p>'+practiceBarHtml();
+  if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderListen($("#view-listen"))); return; }
+  if(listenIdx>=items.length) listenIdx=0;
+  const sent=items[listenIdx];
   v.innerHTML=
-    '<p class="h-eyebrow">'+esc(t("nav_listen"))+'</p>'+
-    '<h1 class="h1">'+esc(t("listen_h"))+'</h1>'+
-    '<p class="lede">'+esc(t("listen_sub"))+'</p>'+
+    head+
     '<div class="stage"><div class="promptcard" style="text-align:center">'+
       '<button class="playbig" id="lplay" aria-label="Play">▶</button>'+
       '<div class="row" style="justify-content:center"><button class="btn sm" id="lreplay">↻ '+esc(t("replay"))+'</button>'+
@@ -1495,7 +1658,8 @@ function renderListen(v){
   $("#lreplay",v).onclick=()=>speak(sent);
   $("#lslow",v).onclick=()=>speak(sent,{slow:true});
   $("#lreveal",v).onclick=()=>reveal();
-  $("#lnext",v).onclick=()=>{ listenIdx=(listenIdx+1)%LISTEN.length; renderListen($("#view-listen")); };
+  $("#lnext",v).onclick=()=>{ listenIdx=(listenIdx+1)%items.length; renderListen($("#view-listen")); };
+  bindPracticeBar(v,()=>renderListen($("#view-listen")));
   $("#lcheck",v).onclick=()=>{
     const ans=$("#lans",v).value.trim(); if(!ans){ speak(sent); return; }
     const a=stripCn(ans), b=stripCn(sent);
@@ -1586,7 +1750,7 @@ function renderSettings(v){
       '<div class="row">'+rateBtn(0.6,t("speed_slow"))+rateBtn(0.95,t("speed_normal"))+rateBtn(1.2,t("speed_fast"))+'</div>'+
       '<p class="hint" style="margin-top:12px">'+esc(t("voiceStatus"))+': '+(hasZh()?('<span style="color:var(--good)">✓ '+esc(zhVoice?zhVoice.name:"zh")+'</span>'):('<span style="color:var(--bad)">✕</span> '+esc(state.settings.lang==="vi"?"Không tìm thấy giọng tiếng Trung trên thiết bị này.":"No Chinese voice found on this device."))) +
         ' <button class="btn sm" id="vtest" style="margin-left:8px">你好，我们开始吧 ▶</button></p></div>'+
-    '<div class="card" style="margin-bottom:16px"><h2 class="h2">'+esc(t("profiles"))+'</h2>'+
+    '<div class="card" style="margin-bottom:16px"><h2 class="h2">'+esc(t("aiTitle"))+'</h2>'+'<p class="hint" style="margin-top:0">'+esc(t("aiHelp"))+'</p>'+'<label class="field">'+esc(t("aiKey"))+'</label>'+'<input type="password" id="aikey" autocomplete="off" placeholder="gsk_..." value="'+esc(aiCfg().key||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px">'+'<label class="field" style="margin-top:10px">'+esc(t("aiModel"))+'</label>'+'<input type="text" id="aimodel" autocomplete="off" placeholder="'+esc(AI_DEFAULT_MODEL)+'" value="'+esc(aiCfg().model||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px">'+'<div class="row" style="margin-top:12px"><button class="btn primary" id="aitest">'+esc(t("aiTest"))+'</button>'+'<button class="btn ghost" id="aiclear">'+esc(t("aiClear"))+'</button>'+'<a class="btn ghost" href="https://console.groq.com/keys" target="_blank" rel="noopener">'+esc(t("aiGetKey"))+'</a></div>'+'<div class="hint" id="aistatus" style="margin-top:10px">'+(aiConfigured()?'<span style="color:var(--good)">\u2713 '+esc(t("aiActive"))+'</span>':esc(t("aiOffNote")))+'</div></div>'+'<div class="card" style="margin-bottom:16px"><h2 class="h2">'+esc(t("profiles"))+'</h2>'+
       '<div id="proflist"></div>'+
       '<div class="row" style="margin-top:12px"><button class="btn" id="newprof">＋ '+esc(t("newProfile"))+'</button></div>'+
       '<p class="hint" style="margin-top:10px">'+esc(t("profilesHelp"))+'</p></div>'+
@@ -1602,6 +1766,21 @@ function renderSettings(v){
   v.querySelectorAll("[data-rate]").forEach(b=>b.onclick=()=>{ state.settings.rate=parseFloat(b.dataset.rate); save(); speak("你好"); renderSettings($("#view-settings")); });
   v.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>{ state.settings.theme=b.dataset.theme; save(); applyTheme(); renderSettings($("#view-settings")); });
   $("#vtest",v).onclick=()=>speak("你好，我们开始吧");
+  (function(){
+    const ak=$("#aikey",v), am=$("#aimodel",v), ast=$("#aistatus",v);
+    function saveAi(){ const c=aiCfg(); c.key=ak.value.trim(); c.model=am.value.trim(); aiSave(c); }
+    if(ak) ak.oninput=saveAi;
+    if(am) am.oninput=saveAi;
+    const cl=$("#aiclear",v); if(cl) cl.onclick=()=>{ aiSave({}); renderSettings($("#view-settings")); };
+    const tb=$("#aitest",v); if(tb) tb.onclick=async()=>{
+      saveAi();
+      if(!aiConfigured()){ ast.textContent=t("aiNoKey"); return; }
+      ast.textContent=t("aiTesting"); tb.disabled=true;
+      try{ await aiChat([{role:"user",content:"Reply with just: ok"}],{temperature:0}); ast.innerHTML='<span style="color:var(--good)">\u2713 '+esc(t("aiOk"))+'</span>'; }
+      catch(err){ const code=err&&err.code; ast.innerHTML='<span style="color:var(--bad)">'+esc(code==="bad_key"?t("aiBadKey"):code==="rate_limited"?t("aiRate"):t("aiFail"))+'</span>'; }
+      finally{ tb.disabled=false; }
+    };
+  })();
 
   // profile list
   const pl=$("#proflist",v); const profs=listProfiles(); const many=profs.length>1;
