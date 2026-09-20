@@ -371,6 +371,14 @@ label.field{display:block; font-size:13px; font-weight:600; color:var(--ink-soft
 .btn.danger{color:var(--bad); border-color:color-mix(in srgb,var(--bad) 42%,transparent)}
 .setbar{display:flex; align-items:center; gap:10px; margin:-4px 0 14px; flex-wrap:wrap}
 .setbar .cnt{color:var(--ink-faint); font-size:13px}
+.modal-wide{max-width:660px}
+.maptable{overflow:auto; max-height:46vh; border:1px solid var(--line); border-radius:12px}
+.maptable table{border-collapse:collapse; width:100%; font-size:13px}
+.maptable th{padding:7px 8px; border-bottom:1px solid var(--line-strong); background:var(--surface-2); position:sticky; top:0; z-index:1}
+.maptable td{padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap; max-width:240px; overflow:hidden; text-overflow:ellipsis; color:var(--ink-soft)}
+.maptable tr:last-child td{border-bottom:0}
+.maptable select{width:100%; min-width:104px; padding:5px 6px; border:1px solid var(--line-strong); border-radius:8px; background:var(--surface); color:var(--ink); font-size:12px; font-weight:600}
+.maptable td.cjk{font-family:var(--font-hanzi); color:var(--ink)}
 </style>
 </head>
 <body>
@@ -458,12 +466,14 @@ const I18N = {
     correct:"Correct!", notQuite:"Not quite", perfect:"Perfect", missed:"characters off",
     noAi:"AI feedback isn't available in this view, so Huohua will show a natural answer to compare against and let you rate yourself.",
     saved:"Saved", copied:"Copied to clipboard", restored:"Data restored", didReset:"Everything reset",
-    csvHelp:"Import a CSV or Excel (.xlsx) file — columns in this order: hanzi, pinyin, meaning_vi, meaning_en, category, example. A header row is optional. Or paste rows below.",
+    csvHelp:"Upload a CSV or Excel file (comma, semicolon or tab — any column order). You'll match up the columns in the next step. Or paste rows below.",
     added:"Added {n} words", addOne:"Word added", pasteCsv:"…or paste rows here", doImport:"Import",
     setNamePrompt:"Name this word set (e.g. HSK 1, 工厂):", impDefault:"Imported",
     ok:"OK", setNameTitle:"Name this word set", setNamePH:"e.g. HSK 1, 工厂, My deck", detected:"{n} words detected",
     deleteSet:"Delete set", wordsInSet:"words in this set", deleteSetConfirm:"Delete the whole “{set}” set and its {n} words? This can’t be undone.",
     deleteWord:"Delete word", deleteWordConfirm:"Remove “{w}” from your vocabulary?", deleted:"Deleted",
+    mapTitle:"Import — match your columns", mapHelp:"Tell me what each column is.", needHanzi:"Please set one column as Hanzi.",
+    roleIgnore:"— Ignore —", roleHanzi:"Hanzi", rolePinyin:"Pinyin", roleVi:"Meaning (VI)", roleEn:"Meaning (EN)", roleEx:"Example",
     fldHanzi:"Hanzi", fldPinyin:"Pinyin", fldMean:"Meaning (English)", fldMeanVi:"Meaning (Vietnamese)",
     fldCat:"Category", fldEx:"Example (optional)", save:"Save word", cancel:"Cancel",
     speed_slow:"Slow", speed_normal:"Normal", speed_fast:"Fast",
@@ -515,12 +525,14 @@ const I18N = {
     correct:"Chính xác!", notQuite:"Chưa đúng", perfect:"Hoàn hảo", missed:"ký tự sai",
     noAi:"Phản hồi AI không khả dụng ở chế độ này, nên Huohua sẽ hiện câu tự nhiên để bạn so sánh và tự đánh giá.",
     saved:"Đã lưu", copied:"Đã sao chép", restored:"Đã khôi phục dữ liệu", didReset:"Đã xóa tất cả",
-    csvHelp:"Nhập tệp CSV hoặc Excel (.xlsx) — các cột theo thứ tự: hanzi, pinyin, nghĩa_vi, nghĩa_en, danh mục, ví dụ. Dòng tiêu đề là tùy chọn. Hoặc dán các dòng bên dưới.",
+    csvHelp:"Tải lên tệp CSV hoặc Excel (dấu phẩy, chấm phẩy hay tab — thứ tự cột nào cũng được). Bạn sẽ khớp các cột ở bước sau. Hoặc dán các dòng bên dưới.",
     added:"Đã thêm {n} từ", addOne:"Đã thêm từ", pasteCsv:"…hoặc dán các dòng vào đây", doImport:"Nhập",
     setNamePrompt:"Đặt tên cho bộ từ này (vd HSK 1, 工厂):", impDefault:"Đã nhập",
     ok:"OK", setNameTitle:"Đặt tên bộ từ", setNamePH:"vd HSK 1, 工厂, Bộ của tôi", detected:"Đã phát hiện {n} từ",
     deleteSet:"Xóa bộ", wordsInSet:"từ trong bộ này", deleteSetConfirm:"Xóa toàn bộ bộ “{set}” cùng {n} từ trong đó? Không thể hoàn tác.",
     deleteWord:"Xóa từ", deleteWordConfirm:"Xóa “{w}” khỏi danh sách của bạn?", deleted:"Đã xóa",
+    mapTitle:"Nhập từ — khớp các cột", mapHelp:"Cho biết mỗi cột là gì.", needHanzi:"Hãy chọn một cột làm Chữ Hán.",
+    roleIgnore:"— Bỏ qua —", roleHanzi:"Chữ Hán", rolePinyin:"Pinyin", roleVi:"Nghĩa (VI)", roleEn:"Nghĩa (EN)", roleEx:"Ví dụ",
     fldHanzi:"Chữ Hán", fldPinyin:"Pinyin", fldMean:"Nghĩa (tiếng Anh)", fldMeanVi:"Nghĩa (tiếng Việt)",
     fldCat:"Phân loại", fldEx:"Ví dụ (không bắt buộc)", save:"Lưu từ", cancel:"Hủy",
     speed_slow:"Chậm", speed_normal:"Bình thường", speed_fast:"Nhanh",
@@ -1117,34 +1129,25 @@ function toggleImportForm(){
     '<button class="btn ghost" id="csvcancel">'+esc(t("cancel"))+'</button></div></div>';
   $("#csvfile").onchange=(e)=>{ const f=e.target.files[0]; if(!f) return;
     const isXlsx=/\.x(lsx|ls|lsm)$/i.test(f.name);
+    const def=f.name.replace(/\.[^.]+$/,"");
     if(isXlsx){
-      if(!window.XLSX){ toast(t("err_generic")); return; }
+      if(!window.XLSX){ toast(t("err_generic")); e.target.value=""; return; }
       const rd=new FileReader();
-      rd.onload=async()=>{ try{
+      rd.onload=()=>{ try{
         const wb=XLSX.read(new Uint8Array(rd.result),{type:"array"});
         const ws=wb.Sheets[wb.SheetNames[0]];
         const rows=XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false,defval:""});
-        const cnt=countImportable(rows);
-        if(cnt===0){ toast("—"); e.target.value=""; return; }
-        const name=await askSetName(f.name.replace(/\.[^.]+$/,""), t("detected",{n:cnt}));
-        e.target.value="";
-        if(name===null) return;
-        const n=importRows(rows, name);
-        if(n>0){ toast(t("added",{n})+(name.trim()?" · "+name.trim():"")); renderVocab($("#view-vocab")); } else toast("—");
-      }catch(err){ toast(t("err_generic")); } };
+        openImportMapper(rows.map(r=>(r||[]).map(c=>String(c==null?"":c))), def);
+      }catch(err){ toast(t("err_generic")); } e.target.value=""; };
       rd.readAsArrayBuffer(f);
     } else {
       const rd=new FileReader();
-      rd.onload=()=>{ $("#csvtext").value=rd.result; }; rd.readAsText(f);
+      rd.onload=()=>{ openImportMapper(parseDelimited(rd.result), def); e.target.value=""; }; rd.readAsText(f);
     }
   };
-  $("#csvimport").onclick=async()=>{
+  $("#csvimport").onclick=()=>{
     const txt=$("#csvtext").value; if(!txt.trim()){ $("#csvtext").focus(); return; }
-    const cnt=countCsv(txt); if(cnt===0){ toast("—"); return; }
-    const name=await askSetName("", t("detected",{n:cnt}));
-    if(name===null) return;
-    const n=importCsv(txt, name);
-    if(n>0){ toast(t("added",{n})+(name.trim()?" · "+name.trim():"")); renderVocab($("#view-vocab")); } else toast("—");
+    openImportMapper(parseDelimited(txt), "");
   };
   $("#csvcancel").onclick=()=>{ panel.innerHTML=""; panel.dataset.mode=""; };
 }
@@ -1158,11 +1161,11 @@ function askSetName(def, detail){
   return modalPrompt({ title:t("setNameTitle"), message:detail||"", placeholder:t("setNamePH"), value:def||"", confirmText:t("doImport") });
 }
 /* Shared importer: takes rows of already-split cells (from CSV, TSV, or a spreadsheet). */
-function importRows(rows, forcedCat){
+function importRows(rows, forcedCat, noHeader){
   rows=(rows||[]).map(r=>(r||[]).map(c=>String(c==null?"":c).trim())).filter(r=>r.some(c=>c));
   if(!rows.length) return 0;
-  const first=(rows[0].join(",")).toLowerCase();
-  const start=/hanzi|pinyin|meaning|hán|nghĩa/.test(first) ? 1 : 0;
+  let start=0;
+  if(!noHeader){ const first=(rows[0].join(",")).toLowerCase(); start=/hanzi|pinyin|meaning|hán|nghĩa/.test(first) ? 1 : 0; }
   const fc=(forcedCat||"").trim();
   let added=0;
   for(let i=start;i<rows.length;i++){
@@ -1174,6 +1177,90 @@ function importRows(rows, forcedCat){
   }
   if(added) save();
   return added;
+}
+function detectDelim(text){
+  const line=(String(text||"").split(/\r?\n/).find(l=>l.trim()))||"";
+  const c={";":0,",":0,"\t":0}; let q=false;
+  for(const ch of line){ if(ch==='"') q=!q; else if(!q && (ch===";"||ch===","||ch==="\t")) c[ch]++; }
+  let best=",",n=0; for(const d in c){ if(c[d]>n){ n=c[d]; best=d; } }
+  return best;
+}
+function parseDelimited(text){
+  const delim=detectDelim(text);
+  const lines=String(text||"").replace(/^\ufeff/,"").split(/\r?\n/).filter(l=>l.trim().length);
+  return lines.map(l=>splitCsv(l,delim));
+}
+function guessFromHeader(name){
+  name=(name||"").toLowerCase();
+  if(/hanzi|汉字|漢字|中文|chữ hán/.test(name)) return "hanzi";
+  if(/pinyin|拼音/.test(name)) return "pinyin";
+  if(/meaning_en|english|_en|\ben\b|nghĩa.*(en|anh)/.test(name)) return "en";
+  if(/meaning|nghĩa|意思|定义|_vi/.test(name)) return "vi";
+  if(/example|ví dụ|例/.test(name)) return "ex";
+  if(/category|phân loại|loại|hsk|set|hán/.test(name)) return "ignore";
+  return null;
+}
+function guessRoles(cells2d, hasHeader, ncol){
+  const roles=new Array(ncol).fill("ignore");
+  const dataRows=hasHeader?cells2d.slice(1):cells2d;
+  if(hasHeader){ for(let ci=0;ci<ncol;ci++){ const r=guessFromHeader(cells2d[0][ci]||""); if(r) roles[ci]=r; } }
+  const cjk=/[\u3400-\u9fff]/, tone=/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i;
+  const stats=[];
+  for(let ci=0;ci<ncol;ci++){
+    const samp=dataRows.slice(0,12).map(r=>(r[ci]||"")).filter(x=>x.trim());
+    let cjkN=0,toneN=0,len=0;
+    samp.forEach(s=>{ if(cjk.test(s))cjkN++; if(tone.test(s))toneN++; len+=s.length; });
+    stats[ci]={cjk:samp.length?cjkN/samp.length:0, tone:samp.length?toneN/samp.length:0, avg:samp.length?len/samp.length:0};
+  }
+  if(roles.indexOf("hanzi")<0){ let best=-1,bv=0.5; for(let ci=0;ci<ncol;ci++){ if(stats[ci].cjk>bv){ bv=stats[ci].cjk; best=ci; } } if(best>=0) roles[best]="hanzi"; }
+  if(roles.indexOf("pinyin")<0){ for(let ci=0;ci<ncol;ci++){ if(roles[ci]==="ignore" && stats[ci].tone>0.3){ roles[ci]="pinyin"; break; } } }
+  if(roles.indexOf("vi")<0){ let best=-1,bl=1; for(let ci=0;ci<ncol;ci++){ if(roles[ci]==="ignore" && stats[ci].cjk<0.3 && stats[ci].avg>bl){ bl=stats[ci].avg; best=ci; } } if(best>=0) roles[best]="vi"; }
+  return roles;
+}
+function openImportMapper(cells2d, defName){
+  cells2d=(cells2d||[]).map(r=>(r||[]).map(c=>String(c==null?"":c).trim())).filter(r=>r.some(c=>c));
+  if(!cells2d.length){ toast("—"); return; }
+  const ncol=Math.max.apply(null, cells2d.map(r=>r.length));
+  cells2d=cells2d.map(r=>{ while(r.length<ncol) r.push(""); return r; });
+  const hasHeader=cells2d[0].some(c=>/hanzi|pinyin|meaning|nghĩa|hán|例|category|example|拼音|汉字|漢字/i.test(c));
+  const dataRows=(hasHeader?cells2d.slice(1):cells2d).filter(r=>r.some(c=>c));
+  const cnt=dataRows.length;
+  const roles=guessRoles(cells2d, hasHeader, ncol);
+  const ROLE_OPTS=[["ignore",t("roleIgnore")],["hanzi",t("roleHanzi")],["pinyin",t("rolePinyin")],["vi",t("roleVi")],["en",t("roleEn")],["ex",t("roleEx")]];
+  let thead="<tr>";
+  for(let ci=0;ci<ncol;ci++){
+    thead+='<th><select data-col="'+ci+'">'+ROLE_OPTS.map(o=>'<option value="'+o[0]+'"'+(roles[ci]===o[0]?" selected":"")+'>'+esc(o[1])+'</option>').join("")+'</select></th>';
+  }
+  thead+="</tr>";
+  let tbody=""; dataRows.slice(0,4).forEach(r=>{ tbody+="<tr>"+r.slice(0,ncol).map(c=>'<td class="'+(/[\u3400-\u9fff]/.test(c)?"cjk":"")+'">'+esc(c)+'</td>').join("")+"</tr>"; });
+  const ov=el("div","modal-overlay");
+  ov.innerHTML='<div class="modal-card modal-wide" role="dialog" aria-modal="true">'+
+    '<h2 class="modal-title">'+esc(t("mapTitle"))+'</h2>'+
+    '<label class="field" style="margin-bottom:4px">'+esc(t("setNameTitle"))+'</label>'+
+    '<input type="text" class="modal-input" id="mapname" placeholder="'+esc(t("setNamePH"))+'" value="'+esc(defName||"")+'">'+
+    '<p class="hint" style="margin:12px 0 6px">'+esc(t("mapHelp"))+' · '+esc(t("detected",{n:cnt}))+'</p>'+
+    '<div class="maptable"><table><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>'+
+    '<div class="modal-actions"><button class="btn ghost" id="mapx">'+esc(t("cancel"))+'</button>'+
+    '<button class="btn primary" id="mapok">'+esc(t("doImport"))+'</button></div>'+
+  '</div>';
+  function close(){ document.removeEventListener("keydown",onkey); ov.remove(); }
+  function onkey(e){ if(e.key==="Escape"){ e.preventDefault(); close(); } }
+  ov.addEventListener("mousedown",e=>{ if(e.target===ov) close(); });
+  document.addEventListener("keydown",onkey);
+  document.body.appendChild(ov);
+  $("#mapx",ov).onclick=close;
+  $("#mapok",ov).onclick=()=>{
+    const sel={}; ov.querySelectorAll("select[data-col]").forEach(s=>{ sel[+s.dataset.col]=s.value; });
+    const colOf=(role)=>{ for(let i=0;i<ncol;i++) if(sel[i]===role) return i; return -1; };
+    const hc=colOf("hanzi"); if(hc<0){ toast(t("needHanzi")); return; }
+    const pick=(r,i)=>(i>=0?(r[i]||""):"");
+    const mapped=dataRows.map(r=>[ (r[hc]||""), pick(r,colOf("pinyin")), pick(r,colOf("vi")), pick(r,colOf("en")), "", pick(r,colOf("ex")) ]).filter(x=>x[0]);
+    const name=$("#mapname",ov).value;
+    const n=importRows(mapped, name, true);
+    close();
+    if(n>0){ toast(t("added",{n})+(name.trim()?" · "+name.trim():"")); const p=$("#vpanel"); if(p){ p.innerHTML=""; p.dataset.mode=""; } renderVocab($("#view-vocab")); } else toast("—");
+  };
+  setTimeout(()=>{ const mn=$("#mapname",ov); if(mn){ mn.focus(); mn.select(); } },30);
 }
 function countImportable(rows){
   rows=(rows||[]).map(r=>(r||[]).map(c=>String(c==null?"":c).trim())).filter(r=>r.some(c=>c));
