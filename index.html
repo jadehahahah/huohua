@@ -449,11 +449,11 @@ const I18N = {
     yourAnswer:"Your Chinese", writeHere:"写中文…", check:"Check", stop:"Stop", next:"Next sentence",
     showRef:"Show a natural answer", thinking:"Checking your Chinese…",
     corrected:"Corrected", nativeAlt:"A native might also say", tips:"Tips", targets:"Try to use",
-    aiTitle:"AI feedback (optional)", aiHelp:"Add a free Groq API key to unlock smart grading in Reaction Translation. Your key stays only in this browser.",
+    aiTitle:"AI feedback (optional)", aiHelp:"Add a free Groq API key to unlock smart grading and AI-generated examples. Your key stays only in this browser.",
     aiKey:"Groq API key", aiModel:"Model (optional)", aiTest:"Test", aiClear:"Remove", aiGetKey:"Get a free key",
     aiNoKey:"Enter your key first.", aiTesting:"Testing\u2026", aiOk:"Working \u2014 smart grading is on.", aiFail:"Couldn\u2019t reach the AI. Check your key and connection.",
-    aiBadKey:"Invalid key \u2014 check it at console.groq.com.", aiRate:"Rate limit reached \u2014 try again later.",
-    aiActive:"Smart grading is on.", aiOffNote:"No key yet \u2014 using offline grading.", aiBy:"Graded by AI (Groq)",
+    aiBadKey:"Invalid key \u2014 check it at console.groq.com/keys.", aiRate:"Rate limit reached \u2014 try again later.",
+    aiActive:"Smart grading is on.", aiOffNote:"No key yet \u2014 using offline grading.", aiBy:"Graded by AI",
     matchLabel:"match with the sample", matchExact:"Matches the sample!", matchClose:"Very close to the sample",
     compareSample:"Compare with the sample", targetsUsed:"Target words", sampleAnswer:"Sample answer", selfRateQ:"How did you do?",
     meaning:"Meaning", grammar:"Grammar", naturalness:"Naturalness", vocabulary:"Vocabulary",
@@ -516,11 +516,11 @@ const I18N = {
     yourAnswer:"Câu tiếng Trung của bạn", writeHere:"写中文…", check:"Kiểm tra", stop:"Dừng", next:"Câu tiếp theo",
     showRef:"Xem một câu tự nhiên", thinking:"Đang kiểm tra tiếng Trung của bạn…",
     corrected:"Đã sửa", nativeAlt:"Người bản xứ cũng có thể nói", tips:"Mẹo", targets:"Cố gắng dùng",
-    aiTitle:"Chấm bằng AI (tùy chọn)", aiHelp:"Thêm API key Groq miễn phí để mở chấm điểm thông minh ở bài Phản xạ dịch. Key chỉ lưu trên trình duyệt này.",
+    aiTitle:"Chấm bằng AI (tùy chọn)", aiHelp:"Thêm API key Groq miễn phí để mở chấm điểm thông minh và sinh câu ví dụ. Key chỉ lưu trên trình duyệt này.",
     aiKey:"API key Groq", aiModel:"Model (tùy chọn)", aiTest:"Kiểm tra", aiClear:"Gỡ", aiGetKey:"Lấy key miễn phí",
     aiNoKey:"Nhập key trước đã.", aiTesting:"Đang kiểm tra\u2026", aiOk:"Chạy được \u2014 đã bật chấm thông minh.", aiFail:"Không gọi được AI. Kiểm tra key và kết nối.",
-    aiBadKey:"Key không hợp lệ \u2014 kiểm tra ở console.groq.com.", aiRate:"Đã chạm giới hạn \u2014 thử lại sau.",
-    aiActive:"Đã bật chấm thông minh.", aiOffNote:"Chưa có key \u2014 đang dùng chấm ngoại tuyến.", aiBy:"Chấm bằng AI (Groq)",
+    aiBadKey:"Key không hợp lệ \u2014 kiểm tra ở console.groq.com/keys.", aiRate:"Đã chạm giới hạn \u2014 thử lại sau.",
+    aiActive:"Đã bật chấm thông minh.", aiOffNote:"Chưa có key \u2014 đang dùng chấm ngoại tuyến.", aiBy:"Chấm bằng AI",
     matchLabel:"khớp với câu mẫu", matchExact:"Trùng khớp câu mẫu!", matchClose:"Rất sát câu mẫu",
     compareSample:"So sánh với câu mẫu", targetsUsed:"Từ mục tiêu", sampleAnswer:"Câu mẫu", selfRateQ:"Bạn làm thế nào?",
     meaning:"Ý nghĩa", grammar:"Ngữ pháp", naturalness:"Tự nhiên", vocabulary:"Từ vựng",
@@ -1497,7 +1497,7 @@ function renderReactLocal(fb, res, p){
 function aiCfg(){ try{ return JSON.parse(localStorage.getItem("huohua_ai"))||{}; }catch(e){ return {}; } }
 function aiSave(c){ try{ localStorage.setItem("huohua_ai", JSON.stringify(c||{})); }catch(e){} }
 function aiConfigured(){ const c=aiCfg(); return !!(c.key && c.key.trim()); }
-const AI_DEFAULT_MODEL="llama-3.3-70b-versatile";
+const AI_DEFAULT_MODEL="openai/gpt-oss-120b";
 async function aiChat(messages, opts){
   opts=opts||{};
   const c=aiCfg(); if(!c.key||!c.key.trim()) throw {code:"no_key"};
@@ -1508,8 +1508,13 @@ async function aiChat(messages, opts){
   try{ res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
     method:"POST", headers:{ "Authorization":"Bearer "+c.key.trim(), "Content-Type":"application/json" },
     body:JSON.stringify(body) }); }
-  catch(e){ throw {code:"network"}; }
-  if(!res.ok){ let code="http_"+res.status; if(res.status===401||res.status===403) code="bad_key"; else if(res.status===429) code="rate_limited"; throw {code:code,status:res.status}; }
+  catch(e){ console.error("Huohua AI network error:", e); throw {code:"network", message:String((e&&e.message)||e)}; }
+  if(!res.ok){
+    let detail=""; try{ const j=await res.json(); detail=(j&&j.error&&(j.error.message||j.error))||""; }catch(e){ try{ detail=await res.text(); }catch(e2){} }
+    console.error("Huohua AI error", res.status, detail);
+    let code="http_"+res.status; if(res.status===401||res.status===403) code="bad_key"; else if(res.status===429) code="rate_limited";
+    throw {code:code, status:res.status, message:(typeof detail==="string"?detail:JSON.stringify(detail))};
+  }
   const data=await res.json();
   const text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||"";
   if(opts.json){ try{ return JSON.parse(text); }catch(e){ const m=text.match(/\{[\s\S]*\}/); if(m){ try{ return JSON.parse(m[0]); }catch(e2){} } throw {code:"bad_json"}; } }
@@ -1777,7 +1782,10 @@ function renderSettings(v){
       if(!aiConfigured()){ ast.textContent=t("aiNoKey"); return; }
       ast.textContent=t("aiTesting"); tb.disabled=true;
       try{ await aiChat([{role:"user",content:"Reply with just: ok"}],{temperature:0}); ast.innerHTML='<span style="color:var(--good)">\u2713 '+esc(t("aiOk"))+'</span>'; }
-      catch(err){ const code=err&&err.code; ast.innerHTML='<span style="color:var(--bad)">'+esc(code==="bad_key"?t("aiBadKey"):code==="rate_limited"?t("aiRate"):t("aiFail"))+'</span>'; }
+      catch(err){ const code=err&&err.code;
+        let msg = code==="bad_key"?t("aiBadKey") : code==="rate_limited"?t("aiRate")
+          : t("aiFail")+(err&&err.message?(" — "+err.message):(err&&err.status?(" ("+err.status+")"):""));
+        ast.innerHTML='<span style="color:var(--bad)">'+esc(msg)+'</span>'; }
       finally{ tb.disabled=false; }
     };
   })();
