@@ -891,7 +891,20 @@ function buildNav(){
 function syncNav(){ document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active",a.dataset.view===currentView)); }
 function setLang(l){
   if(l!==state.settings.lang){ state.settings.lang=l; save(); }
+  snapshotReact();
   syncLang(); buildNav(); go(currentView);
+}
+function snapshotReact(){
+  if(currentView!=="react") return;
+  const ta=document.getElementById("rans"), fb=document.getElementById("rfeedback");
+  if(ta) reactDraft={ idx:reactIdx, ans:ta.value, fb:fb?fb.innerHTML:"" };
+}
+function rebindAudio(root){
+  if(!root) return;
+  root.querySelectorAll(".answerblock .val").forEach(val=>{
+    const sp=val.querySelector("span"); const txt=(sp?sp.textContent:val.textContent).trim();
+    val.querySelectorAll(".iconbtn").forEach((b,i)=>{ b.onclick=()=>speak(txt, i>=1?{slow:true}:undefined); });
+  });
 }
 function syncLang(){
   document.querySelectorAll("#langtoggle [data-setlang]").forEach(b=>b.classList.toggle("on", b.dataset.setlang===state.settings.lang));
@@ -1363,7 +1376,7 @@ function bindPracticeBar(v, rerender){
   };
 }
 function practiceEmpty(){ return '<div class="stage"><div class="promptcard"><p class="hint" style="margin:0">'+esc(t("setEmpty"))+'</p></div></div>'; }
-let reactIdx=0, reactCtl=null;
+let reactIdx=0, reactCtl=null, reactDraft=null;
 function renderReact(v){
   v=v||$("#view-react"); if(!v) return;
   const items=practiceItems("react");
@@ -1388,7 +1401,10 @@ function renderReact(v){
       '</div>'+
       '<div id="rfeedback"></div>'+
     '</div>';
-  const ta=$("#rans",v); ta.focus();
+  const ta=$("#rans",v);
+  if(reactDraft && reactDraft.idx===reactIdx){ ta.value=reactDraft.ans||""; if(reactDraft.fb){ const fbEl=$("#rfeedback",v); fbEl.innerHTML=reactDraft.fb; rebindAudio(fbEl); } }
+  reactDraft=null;
+  ta.focus();
   $("#rcheck",v).onclick=()=>checkReact();
   $("#rref",v).onclick=()=>showRef();
   $("#rnext",v).onclick=()=>{ let n; do{ n=Math.floor(Math.random()*items.length);}while(n===reactIdx&&items.length>1); reactIdx=n; renderReact(); };
