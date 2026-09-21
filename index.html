@@ -891,20 +891,8 @@ function buildNav(){
 function syncNav(){ document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active",a.dataset.view===currentView)); }
 function setLang(l){
   if(l!==state.settings.lang){ state.settings.lang=l; save(); }
-  snapshotReact();
+  const ta=document.getElementById("rans"); if(currentView==="react" && ta && reactLast && reactLast.idx===reactIdx) reactLast.ans=ta.value;
   syncLang(); buildNav(); go(currentView);
-}
-function snapshotReact(){
-  if(currentView!=="react") return;
-  const ta=document.getElementById("rans"), fb=document.getElementById("rfeedback");
-  if(ta) reactDraft={ idx:reactIdx, ans:ta.value, fb:fb?fb.innerHTML:"" };
-}
-function rebindAudio(root){
-  if(!root) return;
-  root.querySelectorAll(".answerblock .val").forEach(val=>{
-    const sp=val.querySelector("span"); const txt=(sp?sp.textContent:val.textContent).trim();
-    val.querySelectorAll(".iconbtn").forEach((b,i)=>{ b.onclick=()=>speak(txt, i>=1?{slow:true}:undefined); });
-  });
 }
 function syncLang(){
   document.querySelectorAll("#langtoggle [data-setlang]").forEach(b=>b.classList.toggle("on", b.dataset.setlang===state.settings.lang));
@@ -1368,7 +1356,7 @@ function practiceBarHtml(){
   return '<div class="setpick"><span class="hint">'+esc(t("practiceFrom"))+'</span><select id="psel">'+opts+'</select>'+gen+'</div>';
 }
 function bindPracticeBar(v, rerender){
-  const s=$("#psel",v); if(s) s.onchange=()=>{ state.settings.practiceSet=s.value; save(); reactIdx=0; buildIdx=0; listenIdx=0; rerender(); };
+  const s=$("#psel",v); if(s) s.onchange=()=>{ state.settings.practiceSet=s.value; save(); reactIdx=0; buildIdx=0; listenIdx=0; reactLast=null; rerender(); };
   const g=$("#pgen",v); if(g) g.onclick=async()=>{
     g.disabled=true; g.textContent=t("genRunning");
     try{ const n=await genExamples(state.settings.practiceSet); toast(n>0?t("genDone",{n:n}):"\u2014"); rerender(); }
@@ -1376,7 +1364,7 @@ function bindPracticeBar(v, rerender){
   };
 }
 function practiceEmpty(){ return '<div class="stage"><div class="promptcard"><p class="hint" style="margin:0">'+esc(t("setEmpty"))+'</p></div></div>'; }
-let reactIdx=0, reactCtl=null, reactDraft=null;
+let reactIdx=0, reactCtl=null, reactLast=null;
 function renderReact(v){
   v=v||$("#view-react"); if(!v) return;
   const items=practiceItems("react");
@@ -1402,12 +1390,17 @@ function renderReact(v){
       '<div id="rfeedback"></div>'+
     '</div>';
   const ta=$("#rans",v);
-  if(reactDraft && reactDraft.idx===reactIdx){ ta.value=reactDraft.ans||""; if(reactDraft.fb){ const fbEl=$("#rfeedback",v); fbEl.innerHTML=reactDraft.fb; rebindAudio(fbEl); } }
-  reactDraft=null;
+  if(reactLast && reactLast.idx===reactIdx){
+    ta.value=reactLast.ans||"";
+    if(reactLast.kind==="ai") renderAiFeedback($("#rfeedback",v), reactLast.data, p);
+    else if(reactLast.kind==="local") renderReactLocal($("#rfeedback",v), reactLast.data, p);
+    else if(reactLast.kind==="ref") showRef();
+  } else { reactLast=null; }
+  ta.oninput=()=>{ if(!reactLast||reactLast.idx!==reactIdx) reactLast={idx:reactIdx,ans:"",kind:null,data:null}; reactLast.ans=ta.value; };
   ta.focus();
   $("#rcheck",v).onclick=()=>checkReact();
   $("#rref",v).onclick=()=>showRef();
-  $("#rnext",v).onclick=()=>{ let n; do{ n=Math.floor(Math.random()*items.length);}while(n===reactIdx&&items.length>1); reactIdx=n; renderReact(); };
+  $("#rnext",v).onclick=()=>{ let n; do{ n=Math.floor(Math.random()*items.length);}while(n===reactIdx&&items.length>1); reactIdx=n; reactLast=null; renderReact(); };
   bindPracticeBar(v,()=>renderReact());
 
   function showRef(){
@@ -1424,6 +1417,7 @@ function renderReact(v){
       const r=b.dataset.r, amt=r==="ok"?22:r==="meh"?11:4;
       creditWords(p.words, amt); logPractice("react", idsOf(p.words)); toast(t("saved"));
     });
+    reactLast={idx:reactIdx, ans:(ta?ta.value:""), kind:"ref"};
   }
   function localGrade(ans){
     const res=gradeReactLocal(ans, p);
@@ -1431,6 +1425,7 @@ function renderReact(v){
     const wordScore = (p.words&&p.words.length) ? res.used.length/p.words.length : 1;
     creditWords(p.words, Math.max(3, Math.round((0.5*res.sim/100 + 0.5*wordScore) * 18)));
     logPractice("react", idsOf(p.words));
+    reactLast={idx:reactIdx, ans:ans, kind:"local", data:res};
   }
   async function checkReact(){
     const ans=$("#rans",v).value.trim();
@@ -1439,7 +1434,7 @@ function renderReact(v){
     const fb=$("#rfeedback",v), btn=$("#rcheck",v); btn.disabled=true;
     fb.innerHTML='<div class="feedback"><div class="row" style="color:var(--ink-soft)"><span class="spinner"></span> '+esc(t("thinking"))+'</div></div>';
     const lang = state.settings.lang==="vi" ? "Vietnamese" : "English";
-    const sys="You are a warm, precise Mandarin Chinese tutor. Judge the learner's Chinese. Reply ONLY with a compact JSON object, no markdown.";
+    const sys="You are a warm, precise Mandarin Chinese tutor. Judge the learner's Chinese. Reply ONLY with a compact JSON object, no markdown. Every \"note\", \"why\" and \"tip\" value MUST be written in "+lang+"; this is required.";
     const usr="Idea (Vietnamese): "+p.vi+"\nIdea (English): "+p.en+"\nA natural reference answer: "+p.ref+"\nThe learner wrote: "+ans+"\n\n"+
       'Return JSON exactly: {"overall":<0-100>,"meaning":{"score":<0-100>,"note":"<short>"},"grammar":{"score":<0-100>,"note":"<short>"},"naturalness":{"score":<0-100>,"note":"<short>"},"vocabulary":{"score":<0-100>,"note":"<short>"},"corrected":"<most natural correct Chinese for their intent>","native_alt":"<a different natural way, or empty>","tips":["<1-3 short tips>"],"errors":[{"wrong":"<hanzi>","right":"<hanzi>","why":"<short>"}]}\n'+
       "All notes, tips and why fields in "+lang+", each under 16 words. If the answer is already good, give high scores and few or no errors.";
@@ -1452,6 +1447,7 @@ function renderReact(v){
       if(Array.isArray(data.errors)) data.errors.slice(0,4).forEach(e=>{ if(e&&e.wrong&&e.right) state.mistakes.push({wrong:String(e.wrong),right:String(e.right),why:String(e.why||""),d:todayStr()}); });
       if(state.mistakes.length>200) state.mistakes=state.mistakes.slice(-200);
       save();
+      reactLast={idx:reactIdx, ans:ans, kind:"ai", data:data};
     }catch(err){
       const code=err&&err.code;
       if(code==="bad_key") fb.innerHTML='<div class="notice">'+esc(t("aiBadKey"))+'</div>';
