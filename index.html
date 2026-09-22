@@ -429,7 +429,7 @@ const I18N = {
     nav_dashboard:"Dashboard", nav_vocab:"Vocabulary", nav_react:"Reaction Translation",
     nav_build:"Sentence Builder", nav_listen:"Listening", nav_progress:"Progress", nav_settings:"Settings",
     practiceFrom:"Practise from:", builtinSet:"Built-in sentences", setEmpty:"This set has nothing for this exercise yet. Pick another set above, or add example sentences.",
-    genEx:"Generate examples", genRunning:"Generating\u2026", genDone:"Added {n} example sentences",
+    genEx:"Generate examples", genRunning:"Generating\u2026", genDone:"Added {n} example sentences", refreshEx:"Refresh", refreshRunning:"Refreshing…", refreshDone:"Refreshed {n} sentences", regenOne:"New sentence",
     yourId:"Your Huohua ID",
     greet:"Keep the spark going", dash_sub:"Turn the words you know into words you can use.",
     activeVocab:"Active vocabulary", ofTotal:"of {n} words", total:"Words collected", ignitedToday:"Activated today",
@@ -453,7 +453,7 @@ const I18N = {
     aiKey:"Groq API key", aiModel:"Model (optional)", aiTest:"Test", aiClear:"Remove", aiGetKey:"Get a free key",
     aiNoKey:"Enter your key first.", aiTesting:"Testing\u2026", aiOk:"Working \u2014 smart grading is on.", aiFail:"Couldn\u2019t reach the AI. Check your key and connection.",
     aiBadKey:"Invalid key \u2014 check it at console.groq.com/keys.", aiRate:"Rate limit reached \u2014 try again later.",
-    aiActive:"Smart grading is on.", aiOffNote:"No key yet \u2014 using offline grading.", aiBy:"Graded by AI",
+    aiActive:"Smart grading is on.", aiOffNote:"No key yet \u2014 using offline grading.", aiBy:"Graded by AI", autoRefLabel:"Auto-refresh a sentence after (practices)", autoRefHint:"0 = off. Uses an AI call each time a sentence refreshes.",
     matchLabel:"match with the sample", matchExact:"Matches the sample!", matchClose:"Very close to the sample",
     compareSample:"Compare with the sample", targetsUsed:"Target words", sampleAnswer:"Sample answer", selfRateQ:"How did you do?",
     meaning:"Meaning", grammar:"Grammar", naturalness:"Naturalness", vocabulary:"Vocabulary",
@@ -496,7 +496,7 @@ const I18N = {
     nav_dashboard:"Tổng quan", nav_vocab:"Từ vựng", nav_react:"Phản xạ dịch",
     nav_build:"Ghép câu", nav_listen:"Nghe chép", nav_progress:"Tiến độ", nav_settings:"Cài đặt",
     practiceFrom:"Luyện từ bộ:", builtinSet:"Câu có sẵn", setEmpty:"Bộ này chưa có nội dung cho bài này. Chọn bộ khác ở trên, hoặc thêm câu ví dụ.",
-    genEx:"Sinh câu ví dụ", genRunning:"Đang sinh\u2026", genDone:"Đã tạo {n} câu ví dụ",
+    genEx:"Sinh câu ví dụ", genRunning:"Đang sinh\u2026", genDone:"Đã tạo {n} câu ví dụ", refreshEx:"Làm mới", refreshRunning:"Đang làm mới…", refreshDone:"Đã làm mới {n} câu", regenOne:"Câu mới",
     yourId:"Huohua ID của bạn",
     greet:"Giữ cho tia lửa cháy", dash_sub:"Biến những từ bạn biết thành những từ bạn dùng được.",
     activeVocab:"Từ vựng chủ động", ofTotal:"trên {n} từ", total:"Từ đã thu thập", ignitedToday:"Kích hoạt hôm nay",
@@ -520,7 +520,7 @@ const I18N = {
     aiKey:"API key Groq", aiModel:"Model (tùy chọn)", aiTest:"Kiểm tra", aiClear:"Gỡ", aiGetKey:"Lấy key miễn phí",
     aiNoKey:"Nhập key trước đã.", aiTesting:"Đang kiểm tra\u2026", aiOk:"Chạy được \u2014 đã bật chấm thông minh.", aiFail:"Không gọi được AI. Kiểm tra key và kết nối.",
     aiBadKey:"Key không hợp lệ \u2014 kiểm tra ở console.groq.com/keys.", aiRate:"Đã chạm giới hạn \u2014 thử lại sau.",
-    aiActive:"Đã bật chấm thông minh.", aiOffNote:"Chưa có key \u2014 đang dùng chấm ngoại tuyến.", aiBy:"Chấm bằng AI",
+    aiActive:"Đã bật chấm thông minh.", aiOffNote:"Chưa có key \u2014 đang dùng chấm ngoại tuyến.", aiBy:"Chấm bằng AI", autoRefLabel:"Tự làm mới câu sau (số lần luyện)", autoRefHint:"0 = tắt. Mỗi lần làm mới tốn một lượt gọi AI.",
     matchLabel:"khớp với câu mẫu", matchExact:"Trùng khớp câu mẫu!", matchClose:"Rất sát câu mẫu",
     compareSample:"So sánh với câu mẫu", targetsUsed:"Từ mục tiêu", sampleAnswer:"Câu mẫu", selfRateQ:"Bạn làm thế nào?",
     meaning:"Ý nghĩa", grammar:"Ngữ pháp", naturalness:"Tự nhiên", vocabulary:"Từ vựng",
@@ -1089,7 +1089,7 @@ function wordRow(w){
     const p=P(w.id);
     det.innerHTML=
       (w.ex?('<div class="wexample"><div class="ex"><div class="exh hanzi">'+esc(w.ex)+'</div><div class="exg">'+esc(w.exen||"")+'</div></div>'+
-        '<button class="iconbtn" title="'+esc(t("play"))+'" data-p="1">▶</button><button class="iconbtn" title="'+esc(t("slow"))+'" data-p="2">🐢</button></div>'):'')+
+        '<button class="iconbtn" title="'+esc(t("play"))+'" data-p="1">▶</button><button class="iconbtn" title="'+esc(t("slow"))+'" data-p="2">🐢</button>'+(aiConfigured()?'<button class="iconbtn" title="'+esc(t("regenOne"))+'" data-regen="1">🔄</button>':'')+'</div>'):'')+
       '<div class="mastery">'+
         mcell(t("recognition"),p.rec)+mcell(t("writing"),p.wri)+mcell(t("usage"),p.use)+mcell(t("listening"),p.lis)+
       '</div>'+
@@ -1100,6 +1100,8 @@ function wordRow(w){
       '</div>'+
       '<div class="row" style="margin-top:10px"><button class="btn sm ghost danger" data-del>🗑 '+esc(t("deleteWord"))+'</button></div>';
     det.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>speak(w.ex,{slow:b.dataset.p==="2"}));
+    const rg=det.querySelector("[data-regen]");
+    if(rg) rg.onclick=async()=>{ rg.textContent="…"; try{ await genOneExample(w); filled=false; fillDetail(); }catch(e){ toast((e&&e.code)==="rate_limited"?t("aiRate"):t("aiFail")); rg.textContent="🔄"; } };
     det.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
       const r=b.dataset.r;
       if(r==="know"){ bump(w.id,"rec",25); bump(w.id,"use",12); }
@@ -1337,11 +1339,14 @@ function practiceItems(kind){
   const ws=state.words.filter(w=>w.cat===set);
   const hasEx=w=>w.ex&&w.ex.trim();
   if(kind==="react") return ws.filter(w=>w.hanzi&&(w.vi||w.en||hasEx(w))).map(w=> hasEx(w)
-      ? ({vi:(w.exvi||w.exen||w.vi), en:(w.exen||w.exvi||w.en), ref:w.ex.trim(), words:[w.hanzi]})
-      : ({vi:w.vi||w.en, en:w.en||w.vi, ref:w.hanzi, words:[w.hanzi], _hideTargets:true}));
-  if(kind==="listen") return ws.filter(w=>w.hanzi).map(w=>hasEx(w)?w.ex.trim():w.hanzi);
-  return ws.filter(w=>w.hanzi && ((w.extiles&&w.extiles.length>=2) || Array.from(w.hanzi).length>=2))
-    .map(w=> (w.extiles&&w.extiles.length>=2) ? ({tiles:w.extiles.slice(), ans:(w.ex||"").trim()}) : ({tiles:Array.from(w.hanzi), ans:w.hanzi}));
+      ? ({vi:(w.exvi||w.exen||w.vi), en:(w.exen||w.exvi||w.en), ref:w.ex.trim(), words:[w.hanzi], _w:w})
+      : ({vi:w.vi||w.en, en:w.en||w.vi, ref:w.hanzi, words:[w.hanzi], _hideTargets:true, _gen:true, _w:w}));
+  if(kind==="listen") return ws.filter(w=>w.hanzi).map(w=>({sent:(hasEx(w)?w.ex.trim():w.hanzi), _w:w, _gen:!hasEx(w)}));
+  const ai=aiConfigured();
+  return ws.filter(w=>w.hanzi && ((w.extiles&&w.extiles.length>=2) || ai || Array.from(w.hanzi).length>=2))
+    .map(w=> (w.extiles&&w.extiles.length>=2)
+      ? ({tiles:w.extiles.slice(), ans:(w.ex||"").trim(), _w:w})
+      : ({tiles:Array.from(w.hanzi), ans:w.hanzi, _w:w, _gen:true}));
 }
 function practiceBarHtml(){
   const cur=(state.settings.practiceSet)||"builtin";
@@ -1352,6 +1357,8 @@ function practiceBarHtml(){
   if(cur!=="builtin" && aiConfigured()){
     const need=state.words.filter(w=>w.cat===cur && !(w.ex&&w.ex.trim())).length;
     if(need>0) gen='<button class="btn sm" id="pgen">\u2726 '+esc(t("genEx"))+' ('+need+')</button>';
+    const done=state.words.filter(w=>w.cat===cur && w.ex&&w.ex.trim()).length;
+    if(done>0) gen+='<button class="btn sm ghost" id="pref">🔄 '+esc(t("refreshEx"))+'</button>';
   }
   return '<div class="setpick"><span class="hint">'+esc(t("practiceFrom"))+'</span><select id="psel">'+opts+'</select>'+gen+'</div>';
 }
@@ -1361,6 +1368,11 @@ function bindPracticeBar(v, rerender){
     g.disabled=true; g.textContent=t("genRunning");
     try{ const n=await genExamples(state.settings.practiceSet); toast(n>0?t("genDone",{n:n}):"\u2014"); rerender(); }
     catch(err){ const c=err&&err.code; toast(c==="bad_key"?t("aiBadKey"):c==="rate_limited"?t("aiRate"):t("aiFail")); g.disabled=false; g.textContent="\u2726 "+t("genEx"); }
+  };
+  const rf=$("#pref",v); if(rf) rf.onclick=async()=>{
+    rf.disabled=true; rf.textContent=t("refreshRunning");
+    try{ const n=await genExamples(state.settings.practiceSet,"refresh"); genFailed.clear(); toast(n>0?t("refreshDone",{n:n}):"—"); rerender(); }
+    catch(err){ const c=err&&err.code; toast(c==="bad_key"?t("aiBadKey"):c==="rate_limited"?t("aiRate"):t("aiFail")); rf.disabled=false; rf.textContent="🔄 "+t("refreshEx"); }
   };
 }
 function practiceEmpty(){ return '<div class="stage"><div class="promptcard"><p class="hint" style="margin:0">'+esc(t("setEmpty"))+'</p></div></div>'; }
@@ -1372,6 +1384,12 @@ function renderReact(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderReact()); return; }
   if(reactIdx>=items.length) reactIdx=0;
   const p=items[reactIdx];
+  if(p && p._w && aiConfigured() && !genFailed.has(p._w.id) && (p._gen || (autoRefreshN()>0 && (p._w.exUses||0)>=autoRefreshN()))){
+    v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
+    bindPracticeBar(v,()=>renderReact());
+    genOneExample(p._w).then(()=>renderReact()).catch(err=>{ if(err&&err.code==="rate_limited") toast(t("aiRate")); genFailed.add(p._w.id); renderReact(); });
+    return;
+  }
   v.innerHTML=
     head+
     '<div class="stage">'+
@@ -1425,6 +1443,7 @@ function renderReact(v){
     const wordScore = (p.words&&p.words.length) ? res.used.length/p.words.length : 1;
     creditWords(p.words, Math.max(3, Math.round((0.5*res.sim/100 + 0.5*wordScore) * 18)));
     logPractice("react", idsOf(p.words));
+    noteTested(p._w);
     reactLast={idx:reactIdx, ans:ans, kind:"local", data:res};
   }
   async function checkReact(){
@@ -1448,6 +1467,7 @@ function renderReact(v){
       if(state.mistakes.length>200) state.mistakes=state.mistakes.slice(-200);
       save();
       reactLast={idx:reactIdx, ans:ans, kind:"ai", data:data};
+      noteTested(p._w);
     }catch(err){
       const code=err&&err.code;
       if(code==="bad_key") fb.innerHTML='<div class="notice">'+esc(t("aiBadKey"))+'</div>';
@@ -1532,28 +1552,44 @@ async function aiChat(messages, opts){
   if(opts.json){ try{ return JSON.parse(text); }catch(e){ const m=text.match(/\{[\s\S]*\}/); if(m){ try{ return JSON.parse(m[0]); }catch(e2){} } throw {code:"bad_json"}; } }
   return text;
 }
-async function genExamples(setCat){
-  const need=state.words.filter(w=>w.cat===setCat && !(w.ex&&w.ex.trim()));
-  if(!need.length) return 0;
-  const cap=need.slice(0,24), CH=8; let done=0;
-  const lang = state.settings.lang==="vi" ? "Vietnamese" : "English";
+async function genExamples(setCat, mode){
+  const has=w=>w.ex&&w.ex.trim();
+  const pool=state.words.filter(w=>w.cat===setCat && (mode==="refresh"?has(w):!has(w)));
+  if(!pool.length) return 0;
+  const cap=pool.slice(0,24), CH=8; let done=0;
+  const vary = mode==="refresh" ? " Make each sentence clearly different from a typical textbook example and vary the situation." : "";
   for(let i=0;i<cap.length;i+=CH){
     const chunk=cap.slice(i,i+CH);
     const list=chunk.map((w,k)=>(k+1)+". "+w.hanzi+(w.pinyin?" ("+w.pinyin+")":"")).join("\n");
     const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
-    const usr="For each Chinese word below, write ONE short, natural, beginner-friendly sentence (ideally under 12 Chinese characters) that uses the exact word. Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
-    const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.4});
+    const usr="For each Chinese word below, write ONE short, natural, beginner-friendly sentence (ideally under 12 Chinese characters) that uses the exact word."+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
+    const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:(mode==="refresh"?0.85:0.4)});
     const items=(data&&data.items)||[];
     chunk.forEach((w,k)=>{ const it=items[k]; if(it&&it.cn){
       w.ex=String(it.cn).trim();
       w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
       let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
       if(tiles.join("").replace(/\s/g,"")!==w.ex.replace(/\s/g,"")) tiles=Array.from(w.ex);
-      w.extiles=tiles; done++;
+      w.extiles=tiles; w.exUses=0; done++;
     }});
     save();
   }
   return done;
+}
+const genFailed=new Set();
+function autoRefreshN(){ const n=state.settings.autoRefresh; return n==null?5:(parseInt(n,10)||0); }
+function noteTested(w){ if(!w) return; w.exUses=(w.exUses||0)+1; save(); }
+async function genOneExample(w){
+  const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
+  const usr="Write ONE short, natural, beginner-friendly Chinese sentence (ideally under 12 Chinese characters) that uses the word \""+w.hanzi+"\""+(w.pinyin?" (pinyin: "+w.pinyin+")":"")+". Return {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" = the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.";
+  const it=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.5});
+  if(it&&it.cn){
+    w.ex=String(it.cn).trim(); w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
+    let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
+    if(tiles.join("").replace(/\s/g,"")!==w.ex.replace(/\s/g,"")) tiles=Array.from(w.ex);
+    w.extiles=tiles; w.exUses=0; save(); return true;
+  }
+  throw {code:"bad_json"};
 }
 function renderAiFeedback(fb,data,p){
   const q=Math.max(0,Math.min(100,Math.round(Number(data.overall)||0)));
@@ -1597,6 +1633,12 @@ function renderBuild(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderBuild($("#view-build"))); return; }
   if(buildIdx>=items.length) buildIdx=0;
   const item=items[buildIdx];
+  if(item._w && aiConfigured() && !genFailed.has(item._w.id) && (item._gen || (autoRefreshN()>0 && (item._w.exUses||0)>=autoRefreshN()))){
+    v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
+    bindPracticeBar(v,()=>renderBuild($("#view-build")));
+    genOneExample(item._w).then(()=>renderBuild($("#view-build"))).catch(err=>{ if(err&&err.code==="rate_limited") toast(t("aiRate")); genFailed.add(item._w.id); renderBuild($("#view-build")); });
+    return;
+  }
   const tiles=shuffle(item.tiles);
   v.innerHTML=
     head+
@@ -1637,6 +1679,7 @@ function renderBuild(v){
         '<div class="val hanzi"><span>'+esc(item.ans)+'</span><button class="iconbtn" id="bplay">▶</button></div></div></div>';
       $("#bplay",fb).onclick=()=>speak(item.ans);
     }
+    noteTested(item._w);
   };
   $("#bclear",v).onclick=()=>{ zone.innerHTML=""; chosen.length=0; pool.querySelectorAll(".tile").forEach(t=>t.classList.remove("used")); $("#bfeedback",v).innerHTML=""; };
   $("#bnext",v).onclick=()=>{ buildIdx=(buildIdx+1)%items.length; renderBuild($("#view-build")); };
@@ -1657,7 +1700,14 @@ function renderListen(v){
   const head='<p class="h-eyebrow">'+esc(t("nav_listen"))+'</p><h1 class="h1">'+esc(t("listen_h"))+'</h1><p class="lede">'+esc(t("listen_sub"))+'</p>'+practiceBarHtml();
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderListen($("#view-listen"))); return; }
   if(listenIdx>=items.length) listenIdx=0;
-  const sent=items[listenIdx];
+  const it=items[listenIdx];
+  if(it._w && aiConfigured() && !genFailed.has(it._w.id) && (it._gen || (autoRefreshN()>0 && (it._w.exUses||0)>=autoRefreshN()))){
+    v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
+    bindPracticeBar(v,()=>renderListen($("#view-listen")));
+    genOneExample(it._w).then(()=>renderListen($("#view-listen"))).catch(err=>{ if(err&&err.code==="rate_limited") toast(t("aiRate")); genFailed.add(it._w.id); renderListen($("#view-listen")); });
+    return;
+  }
+  const sent=it.sent;
   v.innerHTML=
     head+
     '<div class="stage"><div class="promptcard" style="text-align:center">'+
@@ -1695,6 +1745,7 @@ function renderListen(v){
       $("#lfbplay",fb).onclick=()=>speak(sent);
       idsForSentence(sent).forEach(id=>bump(id,"lis",5)); logPractice("listen"); save();
     }
+    noteTested(it._w);
   };
   function reveal(){
     const fb=$("#lfeedback",v);
@@ -1767,7 +1818,7 @@ function renderSettings(v){
       '<div class="row">'+rateBtn(0.6,t("speed_slow"))+rateBtn(0.95,t("speed_normal"))+rateBtn(1.2,t("speed_fast"))+'</div>'+
       '<p class="hint" style="margin-top:12px">'+esc(t("voiceStatus"))+': '+(hasZh()?('<span style="color:var(--good)">✓ '+esc(zhVoice?zhVoice.name:"zh")+'</span>'):('<span style="color:var(--bad)">✕</span> '+esc(state.settings.lang==="vi"?"Không tìm thấy giọng tiếng Trung trên thiết bị này.":"No Chinese voice found on this device."))) +
         ' <button class="btn sm" id="vtest" style="margin-left:8px">你好，我们开始吧 ▶</button></p></div>'+
-    '<div class="card" style="margin-bottom:16px"><h2 class="h2">'+esc(t("aiTitle"))+'</h2>'+'<p class="hint" style="margin-top:0">'+esc(t("aiHelp"))+'</p>'+'<label class="field">'+esc(t("aiKey"))+'</label>'+'<input type="password" id="aikey" autocomplete="off" placeholder="gsk_..." value="'+esc(aiCfg().key||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px">'+'<label class="field" style="margin-top:10px">'+esc(t("aiModel"))+'</label>'+'<input type="text" id="aimodel" autocomplete="off" placeholder="'+esc(AI_DEFAULT_MODEL)+'" value="'+esc(aiCfg().model||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px">'+'<div class="row" style="margin-top:12px"><button class="btn primary" id="aitest">'+esc(t("aiTest"))+'</button>'+'<button class="btn ghost" id="aiclear">'+esc(t("aiClear"))+'</button>'+'<a class="btn ghost" href="https://console.groq.com/keys" target="_blank" rel="noopener">'+esc(t("aiGetKey"))+'</a></div>'+'<div class="hint" id="aistatus" style="margin-top:10px">'+(aiConfigured()?'<span style="color:var(--good)">\u2713 '+esc(t("aiActive"))+'</span>':esc(t("aiOffNote")))+'</div></div>'+'<div class="card" style="margin-bottom:16px"><h2 class="h2">'+esc(t("profiles"))+'</h2>'+
+    '<div class="card" style="margin-bottom:16px"><h2 class="h2">'+esc(t("aiTitle"))+'</h2>'+'<p class="hint" style="margin-top:0">'+esc(t("aiHelp"))+'</p>'+'<label class="field">'+esc(t("aiKey"))+'</label>'+'<input type="password" id="aikey" autocomplete="off" placeholder="gsk_..." value="'+esc(aiCfg().key||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px">'+'<label class="field" style="margin-top:10px">'+esc(t("aiModel"))+'</label>'+'<input type="text" id="aimodel" autocomplete="off" placeholder="'+esc(AI_DEFAULT_MODEL)+'" value="'+esc(aiCfg().model||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px">'+'<label class="field" style="margin-top:10px">'+esc(t("autoRefLabel"))+'</label>'+'<input type="number" id="autoref" min="0" max="50" value="'+esc(String(autoRefreshN()))+'" style="width:130px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px">'+'<p class="hint" style="margin:6px 0 0">'+esc(t("autoRefHint"))+'</p>'+'<div class="row" style="margin-top:12px"><button class="btn primary" id="aitest">'+esc(t("aiTest"))+'</button>'+'<button class="btn ghost" id="aiclear">'+esc(t("aiClear"))+'</button>'+'<a class="btn ghost" href="https://console.groq.com/keys" target="_blank" rel="noopener">'+esc(t("aiGetKey"))+'</a></div>'+'<div class="hint" id="aistatus" style="margin-top:10px">'+(aiConfigured()?'<span style="color:var(--good)">\u2713 '+esc(t("aiActive"))+'</span>':esc(t("aiOffNote")))+'</div></div>'+'<div class="card" style="margin-bottom:16px"><h2 class="h2">'+esc(t("profiles"))+'</h2>'+
       '<div id="proflist"></div>'+
       '<div class="row" style="margin-top:12px"><button class="btn" id="newprof">＋ '+esc(t("newProfile"))+'</button></div>'+
       '<p class="hint" style="margin-top:10px">'+esc(t("profilesHelp"))+'</p></div>'+
@@ -1788,6 +1839,7 @@ function renderSettings(v){
     function saveAi(){ const c=aiCfg(); c.key=ak.value.trim(); c.model=am.value.trim(); aiSave(c); }
     if(ak) ak.oninput=saveAi;
     if(am) am.oninput=saveAi;
+    const ar=$("#autoref",v); if(ar) ar.onchange=()=>{ state.settings.autoRefresh=Math.max(0,Math.min(50,parseInt(ar.value,10)||0)); save(); };
     const cl=$("#aiclear",v); if(cl) cl.onclick=()=>{ aiSave({}); renderSettings($("#view-settings")); };
     const tb=$("#aitest",v); if(tb) tb.onclick=async()=>{
       saveAi();
