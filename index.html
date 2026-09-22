@@ -1339,7 +1339,7 @@ function practiceItems(kind){
   const ws=state.words.filter(w=>w.cat===set);
   const hasEx=w=>w.ex&&w.ex.trim();
   if(kind==="react") return ws.filter(w=>w.hanzi&&(w.vi||w.en||hasEx(w))).map(w=> hasEx(w)
-      ? ({vi:(w.exvi||w.exen||w.vi), en:(w.exen||w.exvi||w.en), ref:w.ex.trim(), words:[w.hanzi], _w:w})
+      ? ({vi:(w.exvi||w.vi||w.exen), en:(w.exen||w.en||w.exvi), ref:w.ex.trim(), words:[w.hanzi], _w:w})
       : ({vi:w.vi||w.en, en:w.en||w.vi, ref:w.hanzi, words:[w.hanzi], _hideTargets:true, _gen:true, _w:w}));
   if(kind==="listen") return ws.filter(w=>w.hanzi).map(w=>({sent:(hasEx(w)?w.ex.trim():w.hanzi), _w:w, _gen:!hasEx(w)}));
   const ai=aiConfigured();
@@ -1394,7 +1394,7 @@ function renderReact(v){
     head+
     '<div class="stage">'+
       '<div class="promptcard">'+
-        '<p class="prompt-vi">'+esc(state.settings.lang==="vi" ? p.vi : p.en)+'</p>'+
+        '<p class="prompt-vi">'+esc(state.settings.lang==="vi" ? (p.vi||p.en) : (p.en||p.vi))+'</p>'+
         (p.words&&p.words.length&&!p._hideTargets?('<div class="targetwords"><span class="hint" style="align-self:center;margin-right:2px">'+esc(t("targets"))+':</span>'+
           p.words.map(w=>'<span class="tw hanzi">'+esc(w)+'</span>').join(""))+'</div>':'')+
       '</div>'+
@@ -1562,7 +1562,7 @@ async function genExamples(setCat, mode){
     const chunk=cap.slice(i,i+CH);
     const list=chunk.map((w,k)=>(k+1)+". "+w.hanzi+(w.pinyin?" ("+w.pinyin+")":"")).join("\n");
     const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
-    const usr="For each Chinese word below, write ONE short, natural, beginner-friendly sentence (ideally under 12 Chinese characters) that uses the exact word."+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
+    const usr="For each Chinese word below, write ONE short, natural, beginner-friendly sentence (ideally under 12 Chinese characters) that uses the exact word."+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
     const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:(mode==="refresh"?0.85:0.4)});
     const items=(data&&data.items)||[];
     chunk.forEach((w,k)=>{ const it=items[k]; if(it&&it.cn){
@@ -1581,7 +1581,7 @@ function autoRefreshN(){ const n=state.settings.autoRefresh; return n==null?5:(p
 function noteTested(w){ if(!w) return; w.exUses=(w.exUses||0)+1; save(); }
 async function genOneExample(w){
   const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
-  const usr="Write ONE short, natural, beginner-friendly Chinese sentence (ideally under 12 Chinese characters) that uses the word \""+w.hanzi+"\""+(w.pinyin?" (pinyin: "+w.pinyin+")":"")+". Return {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" = the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.";
+  const usr="Write ONE short, natural, beginner-friendly Chinese sentence (ideally under 12 Chinese characters) that uses the word \""+w.hanzi+"\""+(w.pinyin?" (pinyin: "+w.pinyin+")":"")+". Return {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" = the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty.";
   const it=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.5});
   if(it&&it.cn){
     w.ex=String(it.cn).trim(); w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
