@@ -1384,10 +1384,10 @@ function renderReact(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderReact()); return; }
   if(reactIdx>=items.length) reactIdx=0;
   const p=items[reactIdx];
-  if(p && p._w && aiConfigured() && !genFailed.has(p._w.id) && (p._gen || (autoRefreshN()>0 && (p._w.exUses||0)>=autoRefreshN()))){
+  if(p && p._w && aiConfigured() && (genFailed.get(p._w.id)||0)<MAX_GEN_RETRY && (p._gen || (autoRefreshN()>0 && (p._w.exUses||0)>=autoRefreshN()))){
     v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
     bindPracticeBar(v,()=>renderReact());
-    genOneExample(p._w).then(()=>renderReact()).catch(err=>{ if(err&&err.code==="rate_limited") toast(t("aiRate")); genFailed.add(p._w.id); renderReact(); });
+    genOneExample(p._w).then(()=>renderReact()).catch(err=>{ console.error("Huohua JIT react:",err); genFailed.set(p._w.id,(genFailed.get(p._w.id)||0)+1); if(err&&err.code==="rate_limited") toast(t("aiRate")); renderReact(); });
     return;
   }
   v.innerHTML=
@@ -1576,7 +1576,8 @@ async function genExamples(setCat, mode){
   }
   return done;
 }
-const genFailed=new Set();
+const genFailed=new Map(); // id -> retry count
+const MAX_GEN_RETRY=2;
 function autoRefreshN(){ const n=state.settings.autoRefresh; return n==null?5:(parseInt(n,10)||0); }
 function noteTested(w){ if(!w) return; w.exUses=(w.exUses||0)+1; save(); }
 async function genOneExample(w){
@@ -1633,10 +1634,10 @@ function renderBuild(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderBuild($("#view-build"))); return; }
   if(buildIdx>=items.length) buildIdx=0;
   const item=items[buildIdx];
-  if(item._w && aiConfigured() && !genFailed.has(item._w.id) && (item._gen || (autoRefreshN()>0 && (item._w.exUses||0)>=autoRefreshN()))){
+  if(item._w && aiConfigured() && (genFailed.get(item._w.id)||0)<MAX_GEN_RETRY && (item._gen || (autoRefreshN()>0 && (item._w.exUses||0)>=autoRefreshN()))){
     v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
     bindPracticeBar(v,()=>renderBuild($("#view-build")));
-    genOneExample(item._w).then(()=>renderBuild($("#view-build"))).catch(err=>{ if(err&&err.code==="rate_limited") toast(t("aiRate")); genFailed.add(item._w.id); renderBuild($("#view-build")); });
+    genOneExample(item._w).then(()=>renderBuild($("#view-build"))).catch(err=>{ console.error("Huohua JIT build:",err); genFailed.set(item._w.id,(genFailed.get(item._w.id)||0)+1); if(err&&err.code==="rate_limited") toast(t("aiRate")); renderBuild($("#view-build")); });
     return;
   }
   const tiles=shuffle(item.tiles);
@@ -1701,10 +1702,10 @@ function renderListen(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderListen($("#view-listen"))); return; }
   if(listenIdx>=items.length) listenIdx=0;
   const it=items[listenIdx];
-  if(it._w && aiConfigured() && !genFailed.has(it._w.id) && (it._gen || (autoRefreshN()>0 && (it._w.exUses||0)>=autoRefreshN()))){
+  if(it._w && aiConfigured() && (genFailed.get(it._w.id)||0)<MAX_GEN_RETRY && (it._gen || (autoRefreshN()>0 && (it._w.exUses||0)>=autoRefreshN()))){
     v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
     bindPracticeBar(v,()=>renderListen($("#view-listen")));
-    genOneExample(it._w).then(()=>renderListen($("#view-listen"))).catch(err=>{ if(err&&err.code==="rate_limited") toast(t("aiRate")); genFailed.add(it._w.id); renderListen($("#view-listen")); });
+    genOneExample(it._w).then(()=>renderListen($("#view-listen"))).catch(err=>{ console.error("Huohua JIT listen:",err); genFailed.set(it._w.id,(genFailed.get(it._w.id)||0)+1); if(err&&err.code==="rate_limited") toast(t("aiRate")); renderListen($("#view-listen")); });
     return;
   }
   const sent=it.sent;
