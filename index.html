@@ -66,7 +66,7 @@ button{font-family:inherit}
 ::selection{background:color-mix(in srgb, var(--spark) 26%, transparent)}
 
 /* ---------- App shell ---------- */
-.app{display:grid; grid-template-columns:246px 1fr; min-height:100dvh}
+.app{display:grid; grid-template-columns:246px minmax(0,1fr); min-height:100dvh}
 .rail{
   position:sticky; top:0; align-self:start; height:100dvh;
   padding:calc(22px + env(safe-area-inset-top,0px)) 16px 18px;
@@ -115,7 +115,7 @@ button{font-family:inherit}
 /* ---------- Mobile ---------- */
 .topbar{display:none}
 @media (max-width:860px){
-  .app{grid-template-columns:1fr}
+  .app{grid-template-columns:minmax(0,1fr)}
   .rail{
     position:fixed; inset:0 34% 0 0; z-index:60; transform:translateX(-105%);
     transition:transform .22s ease; box-shadow:var(--shadow); width:78%; max-width:300px;
