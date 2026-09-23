@@ -1567,9 +1567,9 @@ async function genExamples(setCat, mode){
   for(let i=0;i<cap.length;i+=CH){
     const chunk=cap.slice(i,i+CH);
     const list=chunk.map((w,k)=>(k+1)+". "+w.hanzi+(w.pinyin?" ("+w.pinyin+")":"")).join("\n");
-    const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
-    const usr="For each Chinese word below, write ONE natural sentence that uses the exact word."+diffClause()+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
-    const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:(mode==="refresh"?0.85:0.4)});
+    const sys="You are a Mandarin Chinese teacher writing example sentences for a learner. Every sentence must be natural, grammatically correct, and describe a realistic, logical, everyday situation that a native speaker would actually say — never absurd, contradictory, or nonsensical. Reply ONLY with a compact JSON object, no markdown.";
+    const usr="For each Chinese word below, write ONE natural sentence that uses the exact word."+diffClause()+" Each situation must be realistic and logical."+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
+    const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:(mode==="refresh"?0.6:0.35)});
     const items=(data&&data.items)||[];
     chunk.forEach((w,k)=>{ const it=items[k]; if(it&&it.cn){
       w.ex=String(it.cn).trim();
@@ -1593,9 +1593,9 @@ function diffClause(){ const d=difficultyLevel();
 function needsGen(w){ if(!w) return false; if(!(w.ex&&w.ex.trim())) return true; if((w.exLevel||"easy")!==difficultyLevel()) return true; const n=autoRefreshN(); if(n>0 && (w.exUses||0)>=n) return true; return false; }
 function noteTested(w){ if(!w) return; w.exUses=(w.exUses||0)+1; save(); }
 async function genOneExample(w){
-  const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
-  const usr="Write ONE natural Chinese sentence that uses the word \""+w.hanzi+"\""+(w.pinyin?" (pinyin: "+w.pinyin+")":"")+"."+diffClause()+" Return {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" = the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty.";
-  const it=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.5});
+  const sys="You are a Mandarin Chinese teacher writing example sentences for a learner. Every sentence must be natural, grammatically correct, and describe a realistic, logical, everyday situation that a native speaker would actually say — never absurd, contradictory, or nonsensical. Reply ONLY with a compact JSON object, no markdown.";
+  const usr="Write ONE natural Chinese sentence that uses the word \""+w.hanzi+"\""+(w.pinyin?" (pinyin: "+w.pinyin+")":"")+"."+diffClause()+" The situation must be realistic and make sense — something a real person would actually say. Return {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" = the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty.";
+  const it=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.35});
   if(it&&it.cn){
     w.ex=String(it.cn).trim(); w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
     let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
