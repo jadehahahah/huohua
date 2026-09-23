@@ -815,6 +815,9 @@ if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoi
 function speak(text, opts){
   opts=opts||{};
   if(!window.speechSynthesis){ toast("Speech not supported on this device"); return; }
+  // read only the primary form: drop the " [traditional]" bracket used in word entries
+  text=String(text||"").replace(/\s*\[.*$/,"").trim();
+  if(!text) return;
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text);
