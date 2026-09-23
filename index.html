@@ -429,6 +429,7 @@ const I18N = {
     nav_dashboard:"Dashboard", nav_vocab:"Vocabulary", nav_react:"Reaction Translation",
     nav_build:"Sentence Builder", nav_listen:"Listening", nav_progress:"Progress", nav_settings:"Settings",
     practiceFrom:"Practise from:", builtinSet:"Built-in sentences", setEmpty:"This set has nothing for this exercise yet. Pick another set above, or add example sentences.",
+    difficulty:"Difficulty", diffEasy:"Easy", diffMedium:"Medium", diffHard:"Hard",
     genEx:"Generate examples", genRunning:"Generating\u2026", genDone:"Added {n} example sentences", refreshEx:"Refresh", refreshRunning:"Refreshing…", refreshDone:"Refreshed {n} sentences", regenOne:"New sentence",
     yourId:"Your Huohua ID",
     greet:"Keep the spark going", dash_sub:"Turn the words you know into words you can use.",
@@ -496,6 +497,7 @@ const I18N = {
     nav_dashboard:"Tổng quan", nav_vocab:"Từ vựng", nav_react:"Phản xạ dịch",
     nav_build:"Ghép câu", nav_listen:"Nghe chép", nav_progress:"Tiến độ", nav_settings:"Cài đặt",
     practiceFrom:"Luyện từ bộ:", builtinSet:"Câu có sẵn", setEmpty:"Bộ này chưa có nội dung cho bài này. Chọn bộ khác ở trên, hoặc thêm câu ví dụ.",
+    difficulty:"Độ khó", diffEasy:"Dễ", diffMedium:"Trung bình", diffHard:"Khó",
     genEx:"Sinh câu ví dụ", genRunning:"Đang sinh\u2026", genDone:"Đã tạo {n} câu ví dụ", refreshEx:"Làm mới", refreshRunning:"Đang làm mới…", refreshDone:"Đã làm mới {n} câu", regenOne:"Câu mới",
     yourId:"Huohua ID của bạn",
     greet:"Giữ cho tia lửa cháy", dash_sub:"Biến những từ bạn biết thành những từ bạn dùng được.",
@@ -1355,6 +1357,9 @@ function practiceBarHtml(){
   cats.forEach(c=>{ opts+='<option value="'+esc(c)+'"'+(cur===c?" selected":"")+'>'+esc(CAT_LABEL[c]||c)+'</option>'; });
   let gen="";
   if(cur!=="builtin" && aiConfigured()){
+    const dl=difficultyLevel();
+    const dopts=[["easy",t("diffEasy")],["medium",t("diffMedium")],["hard",t("diffHard")]].map(o=>'<option value="'+o[0]+'"'+(dl===o[0]?" selected":"")+'>'+esc(o[1])+'</option>').join("");
+    gen+='<span class="hint" style="margin-left:6px">'+esc(t("difficulty"))+'</span><select id="pdiff">'+dopts+'</select>';
     const need=state.words.filter(w=>w.cat===cur && !(w.ex&&w.ex.trim())).length;
     if(need>0) gen='<button class="btn sm" id="pgen">\u2726 '+esc(t("genEx"))+' ('+need+')</button>';
     const done=state.words.filter(w=>w.cat===cur && w.ex&&w.ex.trim()).length;
@@ -1364,6 +1369,7 @@ function practiceBarHtml(){
 }
 function bindPracticeBar(v, rerender){
   const s=$("#psel",v); if(s) s.onchange=()=>{ state.settings.practiceSet=s.value; save(); reactIdx=0; buildIdx=0; listenIdx=0; reactLast=null; rerender(); };
+  const dsel=$("#pdiff",v); if(dsel) dsel.onchange=()=>{ state.settings.difficulty=dsel.value; save(); genFailed.clear(); reactIdx=0; buildIdx=0; listenIdx=0; reactLast=null; rerender(); };
   const g=$("#pgen",v); if(g) g.onclick=async()=>{
     g.disabled=true; g.textContent=t("genRunning");
     try{ const n=await genExamples(state.settings.practiceSet); toast(n>0?t("genDone",{n:n}):"\u2014"); rerender(); }
@@ -1384,7 +1390,7 @@ function renderReact(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderReact()); return; }
   if(reactIdx>=items.length) reactIdx=0;
   const p=items[reactIdx];
-  if(p && p._w && aiConfigured() && (genFailed.get(p._w.id)||0)<MAX_GEN_RETRY && (p._gen || (autoRefreshN()>0 && (p._w.exUses||0)>=autoRefreshN()))){
+  if(p && p._w && aiConfigured() && (genFailed.get(p._w.id)||0)<MAX_GEN_RETRY && needsGen(p._w)){
     v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
     bindPracticeBar(v,()=>renderReact());
     genOneExample(p._w).then(()=>renderReact()).catch(err=>{ console.error("Huohua JIT react:",err); genFailed.set(p._w.id,(genFailed.get(p._w.id)||0)+1); if(err&&err.code==="rate_limited") toast(t("aiRate")); renderReact(); });
@@ -1562,7 +1568,7 @@ async function genExamples(setCat, mode){
     const chunk=cap.slice(i,i+CH);
     const list=chunk.map((w,k)=>(k+1)+". "+w.hanzi+(w.pinyin?" ("+w.pinyin+")":"")).join("\n");
     const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
-    const usr="For each Chinese word below, write ONE short, natural, beginner-friendly sentence (ideally under 12 Chinese characters) that uses the exact word."+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
+    const usr="For each Chinese word below, write ONE natural sentence that uses the exact word."+diffClause()+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
     const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:(mode==="refresh"?0.85:0.4)});
     const items=(data&&data.items)||[];
     chunk.forEach((w,k)=>{ const it=items[k]; if(it&&it.cn){
@@ -1570,7 +1576,7 @@ async function genExamples(setCat, mode){
       w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
       let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
       if(tiles.join("").replace(/\s/g,"")!==w.ex.replace(/\s/g,"")) tiles=Array.from(w.ex);
-      w.extiles=tiles; w.exUses=0; done++;
+      w.extiles=tiles; w.exUses=0; w.exLevel=difficultyLevel(); done++;
     }});
     save();
   }
@@ -1579,16 +1585,22 @@ async function genExamples(setCat, mode){
 const genFailed=new Map(); // id -> retry count
 const MAX_GEN_RETRY=2;
 function autoRefreshN(){ const n=state.settings.autoRefresh; return n==null?5:(parseInt(n,10)||0); }
+function difficultyLevel(){ return state.settings.difficulty||"easy"; }
+function diffClause(){ const d=difficultyLevel();
+  if(d==="hard") return " Make it a longer, richer sentence (about 20-35 Chinese characters) using a subordinate clause or a connective such as 因为/所以, 虽然/但是, 如果/就, or 不但/而且; keep it natural and correct.";
+  if(d==="medium") return " Make it a natural everyday sentence of moderate length (about 12-20 Chinese characters); you may use one common connective.";
+  return " Keep it short and beginner-friendly (about 6-12 Chinese characters) with simple grammar."; }
+function needsGen(w){ if(!w) return false; if(!(w.ex&&w.ex.trim())) return true; if((w.exLevel||"easy")!==difficultyLevel()) return true; const n=autoRefreshN(); if(n>0 && (w.exUses||0)>=n) return true; return false; }
 function noteTested(w){ if(!w) return; w.exUses=(w.exUses||0)+1; save(); }
 async function genOneExample(w){
   const sys="You are a Mandarin Chinese teacher. Reply ONLY with a compact JSON object, no markdown.";
-  const usr="Write ONE short, natural, beginner-friendly Chinese sentence (ideally under 12 Chinese characters) that uses the word \""+w.hanzi+"\""+(w.pinyin?" (pinyin: "+w.pinyin+")":"")+". Return {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" = the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty.";
+  const usr="Write ONE natural Chinese sentence that uses the word \""+w.hanzi+"\""+(w.pinyin?" (pinyin: "+w.pinyin+")":"")+"."+diffClause()+" Return {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. \"tiles\" = the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty.";
   const it=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:0.5});
   if(it&&it.cn){
     w.ex=String(it.cn).trim(); w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
     let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
     if(tiles.join("").replace(/\s/g,"")!==w.ex.replace(/\s/g,"")) tiles=Array.from(w.ex);
-    w.extiles=tiles; w.exUses=0; save(); return true;
+    w.extiles=tiles; w.exUses=0; w.exLevel=difficultyLevel(); save(); return true;
   }
   throw {code:"bad_json"};
 }
@@ -1634,7 +1646,7 @@ function renderBuild(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderBuild($("#view-build"))); return; }
   if(buildIdx>=items.length) buildIdx=0;
   const item=items[buildIdx];
-  if(item._w && aiConfigured() && (genFailed.get(item._w.id)||0)<MAX_GEN_RETRY && (item._gen || (autoRefreshN()>0 && (item._w.exUses||0)>=autoRefreshN()))){
+  if(item._w && aiConfigured() && (genFailed.get(item._w.id)||0)<MAX_GEN_RETRY && needsGen(item._w)){
     v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
     bindPracticeBar(v,()=>renderBuild($("#view-build")));
     genOneExample(item._w).then(()=>renderBuild($("#view-build"))).catch(err=>{ console.error("Huohua JIT build:",err); genFailed.set(item._w.id,(genFailed.get(item._w.id)||0)+1); if(err&&err.code==="rate_limited") toast(t("aiRate")); renderBuild($("#view-build")); });
@@ -1702,7 +1714,7 @@ function renderListen(v){
   if(!items.length){ v.innerHTML=head+practiceEmpty(); bindPracticeBar(v,()=>renderListen($("#view-listen"))); return; }
   if(listenIdx>=items.length) listenIdx=0;
   const it=items[listenIdx];
-  if(it._w && aiConfigured() && (genFailed.get(it._w.id)||0)<MAX_GEN_RETRY && (it._gen || (autoRefreshN()>0 && (it._w.exUses||0)>=autoRefreshN()))){
+  if(it._w && aiConfigured() && (genFailed.get(it._w.id)||0)<MAX_GEN_RETRY && needsGen(it._w)){
     v.innerHTML=head+'<div class="stage"><div class="promptcard" style="text-align:center"><p class="hint" style="margin:0"><span class="spinner"></span> '+esc(t("genRunning"))+'</p></div></div>';
     bindPracticeBar(v,()=>renderListen($("#view-listen")));
     genOneExample(it._w).then(()=>renderListen($("#view-listen"))).catch(err=>{ console.error("Huohua JIT listen:",err); genFailed.set(it._w.id,(genFailed.get(it._w.id)||0)+1); if(err&&err.code==="rate_limited") toast(t("aiRate")); renderListen($("#view-listen")); });
