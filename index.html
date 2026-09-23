@@ -1535,7 +1535,7 @@ function renderReactLocal(fb, res, p){
 function aiCfg(){ try{ return JSON.parse(localStorage.getItem("huohua_ai"))||{}; }catch(e){ return {}; } }
 function aiSave(c){ try{ localStorage.setItem("huohua_ai", JSON.stringify(c||{})); }catch(e){} }
 function aiConfigured(){ const c=aiCfg(); return !!(c.key && c.key.trim()); }
-const AI_DEFAULT_MODEL="openai/gpt-oss-120b";
+const AI_DEFAULT_MODEL="qwen/qwen3.8-27b";
 async function aiChat(messages, opts){
   opts=opts||{};
   const c=aiCfg(); if(!c.key||!c.key.trim()) throw {code:"no_key"};
