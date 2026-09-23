@@ -1361,7 +1361,7 @@ function practiceBarHtml(){
     const dopts=[["easy",t("diffEasy")],["medium",t("diffMedium")],["hard",t("diffHard")]].map(o=>'<option value="'+o[0]+'"'+(dl===o[0]?" selected":"")+'>'+esc(o[1])+'</option>').join("");
     gen+='<span class="hint" style="margin-left:6px">'+esc(t("difficulty"))+'</span><select id="pdiff">'+dopts+'</select>';
     const need=state.words.filter(w=>w.cat===cur && !(w.ex&&w.ex.trim())).length;
-    if(need>0) gen='<button class="btn sm" id="pgen">\u2726 '+esc(t("genEx"))+' ('+need+')</button>';
+    if(need>0) gen+='<button class="btn sm" id="pgen">\u2726 '+esc(t("genEx"))+' ('+need+')</button>';
     const done=state.words.filter(w=>w.cat===cur && w.ex&&w.ex.trim()).length;
     if(done>0) gen+='<button class="btn sm ghost" id="pref">🔄 '+esc(t("refreshEx"))+'</button>';
   }
