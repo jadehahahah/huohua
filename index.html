@@ -1562,24 +1562,28 @@ async function genExamples(setCat, mode){
   const has=w=>w.ex&&w.ex.trim();
   const pool=state.words.filter(w=>w.cat===setCat && (mode==="refresh"?has(w):!has(w)));
   if(!pool.length) return 0;
-  const cap=pool.slice(0,24), CH=8; let done=0;
+  const cap=pool.slice(0,16), CH=8; let done=0; let lastErr=null;
   const vary = mode==="refresh" ? " Make each sentence clearly different from a typical textbook example and vary the situation." : "";
   for(let i=0;i<cap.length;i+=CH){
     const chunk=cap.slice(i,i+CH);
     const list=chunk.map((w,k)=>(k+1)+". "+w.hanzi+(w.pinyin?" ("+w.pinyin+")":"")).join("\n");
     const sys="You are a Mandarin Chinese teacher writing example sentences for a learner. Every sentence must be natural, grammatically correct, and describe a realistic, logical, everyday situation that a native speaker would actually say — never absurd, contradictory, or nonsensical. Reply ONLY with a compact JSON object, no markdown.";
     const usr="For each Chinese word below, write ONE natural sentence that uses the exact word."+diffClause()+" Each situation must be realistic and logical."+vary+" Return {\"items\":[...]} with one item per word, in the same order. Each item: {\"cn\":\"<sentence>\",\"tiles\":[\"<chunk>\",...],\"vi\":\"<Vietnamese translation>\",\"en\":\"<English translation>\"}. IMPORTANT: \"vi\" MUST be in Vietnamese, \"en\" MUST be in English. Both are required and must not be empty. \"tiles\" must be the sentence split into 3-7 natural word chunks that, joined in order, exactly equal cn.\nWords:\n"+list;
-    const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:(mode==="refresh"?0.6:0.35)});
-    const items=(data&&data.items)||[];
-    chunk.forEach((w,k)=>{ const it=items[k]; if(it&&it.cn){
-      w.ex=String(it.cn).trim();
-      w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
-      let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
-      if(tiles.join("").replace(/\s/g,"")!==w.ex.replace(/\s/g,"")) tiles=Array.from(w.ex);
-      w.extiles=tiles; w.exUses=0; w.exLevel=difficultyLevel(); done++;
-    }});
-    save();
+    try{
+      const data=await aiChat([{role:"system",content:sys},{role:"user",content:usr}],{json:true,temperature:(mode==="refresh"?0.6:0.35)});
+      const items=(data&&data.items)||[];
+      chunk.forEach((w,k)=>{ const it=items[k]; if(it&&it.cn){
+        w.ex=String(it.cn).trim();
+        w.exvi=String(it.vi||"").trim(); w.exen=String(it.en||"").trim();
+        let tiles=Array.isArray(it.tiles)?it.tiles.map(x=>String(x)):[];
+        if(tiles.join("").replace(/\s/g,"")!==w.ex.replace(/\s/g,"")) tiles=Array.from(w.ex);
+        w.extiles=tiles; w.exUses=0; w.exLevel=difficultyLevel(); done++;
+      }});
+      save();
+    }catch(e){ lastErr=e; if(e&&e.code==="rate_limited") break; }
+    if(i+CH<cap.length) await new Promise(r=>setTimeout(r,400));
   }
+  if(done===0 && lastErr) throw lastErr;
   return done;
 }
 const genFailed=new Map(); // id -> retry count
